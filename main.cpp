@@ -1,28 +1,28 @@
-#include "SDL.h"
 #include "GUI.h"
+#include "SDL.h"
 #include "library.h"
 #include <iostream>
 
 int main() {
-    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not be initialized!\nSDL_Error: " << SDL_GetError() << '\n';
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("FPC",
-                                          SDL_WINDOWPOS_UNDEFINED,
-                                          SDL_WINDOWPOS_UNDEFINED,
-                                          GUI::window_width, GUI::window_height,
-                                          SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* window = SDL_CreateWindow("FPC",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        GUI::window_width, GUI::window_height,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
 
-    if(!window) {
+    if (!window) {
         std::cout << "Window could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
         SDL_Quit();
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-    if(!renderer) {
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+    if (!renderer) {
         std::cout << "Renderer could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -32,7 +32,6 @@ int main() {
     bool quit = false;
 
     FPC::GameState game;
-    //FPC::get_piece_name(game, 3, 0);
     GUI::Painter painter(game, renderer);
     painter.draw_board();
 
@@ -40,7 +39,7 @@ int main() {
     int pixel_height = 0;
     SDL_GL_GetDrawableSize(window, &pixel_width, &pixel_height);
 
-    while(!quit) {
+    while (!quit) {
         bool draw_positions = false;
         FPC::Point square {};
         SDL_Event event;

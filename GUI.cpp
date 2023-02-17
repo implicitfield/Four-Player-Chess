@@ -3,10 +3,10 @@
 
 namespace GUI {
 
-Painter::Painter(FPC::GameState& board, SDL_Renderer *renderer)
+Painter::Painter(FPC::GameState& board, SDL_Renderer* renderer)
     : m_board(board)
-    , m_renderer(renderer)
-{}
+    , m_renderer(renderer) {
+}
 
 static int get_cell_size() {
     int width = window_width / 14 * 2;
@@ -43,17 +43,17 @@ Color Painter::get_piece_color(int x, int y) {
     }
     switch (m_board.get_board()[x][y].piece.value()) {
         case FPC::Piece::Rook:
-            return blend_color({0xEF, 0x29, 0x29}, additive_color); //Red
+            return blend_color({0xEF, 0x29, 0x29}, additive_color); // Red
         case FPC::Piece::Bishop:
-            return blend_color({0x8A, 0xE2, 0x34}, additive_color); //Green
+            return blend_color({0x8A, 0xE2, 0x34}, additive_color); // Green
         case FPC::Piece::King:
-            return blend_color({0xFC, 0xE9, 0x4F}, additive_color); //Yellow
+            return blend_color({0xFC, 0xE9, 0x4F}, additive_color); // Yellow
         case FPC::Piece::Queen:
-            return blend_color({0x72, 0x9F, 0xCF}, additive_color); //Blue
+            return blend_color({0x72, 0x9F, 0xCF}, additive_color); // Blue
         case FPC::Piece::Knight:
-            return blend_color({0xAD, 0x7F, 0xA8}, additive_color); //Magenta
+            return blend_color({0xAD, 0x7F, 0xA8}, additive_color); // Magenta
         case FPC::Piece::Pawn:
-            return blend_color({0x34, 0xE2, 0xE2}, additive_color); //Cyan
+            return blend_color({0x34, 0xE2, 0xE2}, additive_color); // Cyan
     };
 }
 
@@ -82,8 +82,8 @@ void Painter::draw_board() {
             int cell_x = row * cell_size + (window_width / 4) + 12;
             int cell_y = column * cell_size + 12;
 
-            SDL_Rect cell_rect{cell_x, cell_y, cell_size, cell_size};
-            
+            SDL_Rect cell_rect {cell_x, cell_y, cell_size, cell_size};
+
             Color current_color = get_piece_color(row, column);
             SDL_SetRenderDrawColor(m_renderer, current_color.red, current_color.green, current_color.blue, 255);
             SDL_RenderFillRect(m_renderer, &cell_rect);
@@ -98,11 +98,11 @@ void Painter::draw_board() {
 void Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const {
     int cell_size = get_cell_size();
     auto points = m_board.get_valid_moves_for_position(position, player);
-    for(auto point : points) {
+    for (auto point : points) {
         SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
         int point_x = point.x * cell_size + (window_width / 4) + 12;
         int point_y = point.y * cell_size + 12;
-        SDL_Rect point_rect{point_x, point_y, cell_size, cell_size};
+        SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
         SDL_RenderFillRect(m_renderer, &point_rect);
     }
 }
