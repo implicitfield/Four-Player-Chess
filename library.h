@@ -51,7 +51,7 @@ public:
     const std::array<std::array<Square, 14>, 14>& get_board() const;
     std::array<std::array<Square, 14>, 14>& get_board();
     bool point_is_of_color(Point point, Color color) const;
-    IterationDecision position_decision(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point test_position);
+    void iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map);
     std::vector<Point> get_valid_moves_for_position(Point position, Color player);
     std::vector<Point> get_valid_moves_for_rook(Point position, Color player);
     std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player);
