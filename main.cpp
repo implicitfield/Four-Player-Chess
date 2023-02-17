@@ -29,32 +29,51 @@ int main() {
         return 1;
     }
 
-/*
-    SDL_Rect square_rect;
-    square_rect.w = 50;
-    square_rect.h = 50;
-    square_rect.x = window_width - (square_rect.w / 2);
-    square_rect.y = window_height - (square_rect.h / 2);
-*/
-
     bool quit = false;
-    
+
     FPC::GameState game;
     //FPC::get_piece_name(game, 3, 0);
-    
-    
+    GUI::Painter painter(game, renderer);
+    painter.draw_board();
+
+    int pixel_width = 0;
+    int pixel_height = 0;
+    SDL_GL_GetDrawableSize(window, &pixel_width, &pixel_height);
+
     while(!quit) {
+        bool draw_positions = false;
+        FPC::Point square {};
         SDL_Event event;
         SDL_WaitEvent(&event);
-        if(event.type == SDL_QUIT)
-            quit = true;
+        switch (event.type) {
+            case SDL_QUIT:
+                quit = true;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.motion.state & SDL_BUTTON_LMASK) {
+                    // On macOS with retina displays, the position returned from event.motion.* is different compared to
+                    // the internal coordinates used by SDL, so we use scaled coordinates to interface with the library.
+                    int x_scaled = event.motion.x * (pixel_width / GUI::window_width);
+                    int y_scaled = event.motion.y * (pixel_height / GUI::window_height);
+                    std::cout << "X: " << x_scaled << " Y: " << y_scaled << '\n';
+                    auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled});
+                    if (!square_or_empty.has_value())
+                        break;
+                    square = square_or_empty.value();
+                    draw_positions = true;
+                    std::cout << "X: " << square.x << " Y: " << square.y << '\n';
+                }
+
+                break;
+        }
         SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
         SDL_RenderClear(renderer);
-        GUI::Painter painter(game, renderer);
         painter.draw_board();
+        if (draw_positions)
+            painter.draw_valid_positions(square, FPC::Color::Red);
         SDL_RenderPresent(renderer);
     }
-    
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

@@ -19,26 +19,23 @@ GameState::GameState() {
 }
 
 void GameState::reset() {
-    // The first and last three squares on the topmost three rows shall remain null.
+    // Setup red.
     for (int x = 3; x < 11; ++x) {
-        for (int y = 0; y < 3; ++y) {
-            m_board[x][y].is_null = false;
+        for (int y = 12; y < 14; ++y) {
+            m_board[x][y].color = Color::Red;
         }
     }
-    
-    // Same for the lowest three rows.
-    for (int x = 3; x < 11; ++x) {
-        for (int y = 11; y < 14; ++y) {
-            m_board[x][y].is_null = false;
-        }
-    }
-    
-    // Nothing in the remaining rectangle shall be null.
-    for (int x = 0; x < 14; ++x) {
-        for (int y = 3; y < 11; ++y) {
-            m_board[x][y].is_null = false;
-        }
-    }
+    m_board[3][13].piece = Piece::Rook;
+    m_board[4][13].piece = Piece::Knight;
+    m_board[5][13].piece = Piece::Bishop;
+    m_board[6][13].piece = Piece::Queen;
+    m_board[7][13].piece = Piece::King;
+    m_board[8][13].piece = Piece::Bishop;
+    m_board[9][13].piece = Piece::Knight;
+    m_board[10][13].piece = Piece::Rook;
+
+    for(int i = 3; i < 11; ++i)
+        m_board[i][12].piece = Piece::Pawn;
     
     // Setup yellow.
     for (int x = 3; x < 11; ++x) {
@@ -56,23 +53,6 @@ void GameState::reset() {
     m_board[10][0].piece = Piece::Rook;
     for(int i = 3; i < 11; ++i)
         m_board[i][1].piece = Piece::Pawn;
-    
-    // Setup red.
-    for (int x = 3; x < 11; ++x) {
-        for (int y = 12; y < 14; ++y) {
-            m_board[x][y].color = Color::Red;
-        }
-    }
-    m_board[3][13].piece = Piece::Rook;
-    m_board[4][13].piece = Piece::Knight;
-    m_board[5][13].piece = Piece::Bishop;
-    m_board[6][13].piece = Piece::Queen;
-    m_board[7][13].piece = Piece::King;
-    m_board[8][13].piece = Piece::Bishop;
-    m_board[9][13].piece = Piece::Knight;
-    m_board[10][13].piece = Piece::Rook;
-    for(int i = 3; i < 11; ++i)
-        m_board[i][12].piece = Piece::Pawn;
     
     // Setup blue.
     for (int x = 0; x < 2; ++x) {
@@ -94,7 +74,7 @@ void GameState::reset() {
     // Setup green.
     for (int x = 12; x < 14; ++x) {
         for (int y = 3; y < 11; ++y) {
-            m_board[x][y].color = Color::Blue;
+            m_board[x][y].color = Color::Green;
         }
     }
     m_board[13][3].piece = Piece::Rook;
@@ -118,7 +98,9 @@ std::array<std::array<Square, 14>, 14>& GameState::get_board() {
 }
 
 bool GameState::point_is_of_color (Point point, Color color) const {
-    return m_board[point.x][point.y].color.has_value() && m_board[point.x][point.y].color.value() == color;
+    if (!m_board[point.x][point.y].color.has_value())
+        return false;
+    return m_board[point.x][point.y].color.value() == color;
 }
 
 void get_piece_name(const GameState& game, int x, int y) {
@@ -148,6 +130,22 @@ void get_piece_name(const GameState& game, int x, int y) {
     }
 }
 
+IterationDecision GameState::position_decision(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point test_position) {
+    if (test_position.x == original_position.x && test_position.y == original_position.y)
+        return IterationDecision::Continue;
+    // This is a piece that can be captured. The path ends here.
+    if (m_board[test_position.x][test_position.y].piece.has_value() && !point_is_of_color(test_position, player)) {
+        valid_moves.push_back(test_position);
+        return IterationDecision::Break;
+    }
+    // This is another piece that is owned by the player The path ends here.
+    if (m_board[test_position.x][test_position.y].piece.has_value() && point_is_of_color(test_position, player))
+        return IterationDecision::Break;
+
+    valid_moves.push_back(test_position);
+    return IterationDecision::Continue;
+}
+
 std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color player) {
     if (!m_board[position.x][position.y].piece.has_value())
         return {};
@@ -167,21 +165,29 @@ std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color
     }
 }
 
-std::vector<Point> GameState::get_valid_moves_for_rook(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_rook(const Point position, const Color player) {
     std::vector<Point> valid_moves {};
     int x = position.x;
     int y = position.y;
-    while (is_valid_position(++x, y) && !m_board[x - 1][y].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(++x, y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     x = position.x;
-    while (is_valid_position(--x, y) && !m_board[x + 1][y].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(--x, y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     x = position.x;
-    while (is_valid_position(x, ++y) && !m_board[x][y - 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(x, ++y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     y = position.y;
-    while (is_valid_position(x, --y) && !m_board[x][y + 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(x, --y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     return valid_moves;
 }
 
@@ -189,20 +195,28 @@ std::vector<Point> GameState::get_valid_moves_for_bishop(Point position, Color p
     std::vector<Point> valid_moves {};
     int x = position.x;
     int y = position.y;
-    while (is_valid_position(++x, ++y) && !m_board[x - 1][y - 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(++x, ++y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     x = position.x;
     y = position.y;
-    while (is_valid_position(--x, --y) && !m_board[x + 1][y + 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(--x, --y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     x = position.x;
     y = position.y;
-    while (is_valid_position(--x, ++y) && !m_board[x + 1][y - 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(--x, ++y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     x = position.x;
     y = position.y;
-    while (is_valid_position(++x, --y) && !m_board[x - 1][y + 1].piece.has_value() && !point_is_of_color({x, y}, player))
-        valid_moves.push_back({x, y});
+    while (is_valid_position(++x, --y)) {
+        if (position_decision(valid_moves, player, position, {x, y}) == IterationDecision::Break)
+            break;
+    }
     return valid_moves;
 }
 
