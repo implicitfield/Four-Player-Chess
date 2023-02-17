@@ -4,12 +4,12 @@
 namespace FPC {
 
 bool is_valid_position(int row, int column) {
-    if(row < 0 || column < 0 || row > 13 || column > 13)
+    if (row < 0 || column < 0 || row > 13 || column > 13)
         return false;
     if (((row == 0 || row == 1 || row == 2) && (column == 0 || column == 1 || column == 2))
         || ((row == 13 || row == 12 || row == 11) && (column == 13 || column == 12 || column == 11))
         || ((row == 0 || row == 1 || row == 2) && (column == 13 || column == 12 || column == 11))
-        || ((row == 13 || row == 12 || row == 11) &&  (column == 0 || column == 1 || column == 2)))
+        || ((row == 13 || row == 12 || row == 11) && (column == 0 || column == 1 || column == 2)))
         return false;
     return true;
 }
@@ -34,9 +34,9 @@ void GameState::reset() {
     m_board[9][13].piece = Piece::Knight;
     m_board[10][13].piece = Piece::Rook;
 
-    for(int i = 3; i < 11; ++i)
+    for (int i = 3; i < 11; ++i)
         m_board[i][12].piece = Piece::Pawn;
-    
+
     // Setup yellow.
     for (int x = 3; x < 11; ++x) {
         for (int y = 0; y < 2; ++y) {
@@ -51,9 +51,9 @@ void GameState::reset() {
     m_board[8][0].piece = Piece::Bishop;
     m_board[9][0].piece = Piece::Knight;
     m_board[10][0].piece = Piece::Rook;
-    for(int i = 3; i < 11; ++i)
+    for (int i = 3; i < 11; ++i)
         m_board[i][1].piece = Piece::Pawn;
-    
+
     // Setup blue.
     for (int x = 0; x < 2; ++x) {
         for (int y = 3; y < 11; ++y) {
@@ -68,9 +68,9 @@ void GameState::reset() {
     m_board[0][8].piece = Piece::Bishop;
     m_board[0][9].piece = Piece::Knight;
     m_board[0][10].piece = Piece::Rook;
-    for(int i = 3; i < 11; ++i)
+    for (int i = 3; i < 11; ++i)
         m_board[1][i].piece = Piece::Pawn;
-    
+
     // Setup green.
     for (int x = 12; x < 14; ++x) {
         for (int y = 3; y < 11; ++y) {
@@ -85,7 +85,7 @@ void GameState::reset() {
     m_board[13][8].piece = Piece::Bishop;
     m_board[13][9].piece = Piece::Knight;
     m_board[13][10].piece = Piece::Rook;
-    for(int i = 3; i < 11; ++i)
+    for (int i = 3; i < 11; ++i)
         m_board[12][i].piece = Piece::Pawn;
 }
 
@@ -97,7 +97,7 @@ std::array<std::array<Square, 14>, 14>& GameState::get_board() {
     return m_board;
 }
 
-bool GameState::point_is_of_color (Point point, Color color) const {
+bool GameState::point_is_of_color(Point point, Color color) const {
     if (!m_board[point.x][point.y].color.has_value())
         return false;
     return m_board[point.x][point.y].color.value() == color;
@@ -108,7 +108,7 @@ void get_piece_name(const GameState& game, int x, int y) {
         std::cout << "No value.\n";
         return;
     }
-    switch(game.get_board()[x][y].piece.value()) {
+    switch (game.get_board()[x][y].piece.value()) {
         case Piece::Rook:
             std::cout << "Rook\n";
             break;
@@ -280,16 +280,16 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
             direction = {position.x - 1, position.y};
             capture_axis = Axis::Y;
     }
-    
+
     if (is_valid_position(direction.x, direction.y) && !m_board[direction.x][direction.y].piece.has_value())
         valid_moves.push_back({direction.x, direction.y});
-    
+
     auto is_valid = [this, player](Point position) -> bool {
         if (is_valid_position(position.x, position.y) && m_board[position.x][position.y].piece.has_value() && !point_is_of_color(position, player))
             return true;
         return false;
     };
-    
+
     switch (capture_axis) {
         case Axis::X:
             if (is_valid({direction.x + 1, direction.y}))
@@ -304,7 +304,7 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
                 valid_moves.push_back({direction.x, direction.y - 1});
             break;
     }
-    
+
     return valid_moves;
 }
 

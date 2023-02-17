@@ -1,0 +1,16 @@
+---
+Language: Cpp
+BasedOnStyle: WebKit
+Cpp11BracedListStyle: true
+SpaceAfterTemplateKeyword: false
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+BreakInheritanceList: BeforeComma
+BreakConstructorInitializers: BeforeComma
+IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+BreakBeforeBraces: Attach
+NamespaceIndentation: None
+QualifierAlignment: Left
+RequiresClausePosition: WithFollowing
+IndentRequiresClause: false
