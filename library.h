@@ -5,6 +5,7 @@
 #include <vector>
 
 namespace FPC {
+
 enum class Axis {
     X,
     Y
@@ -28,8 +29,12 @@ enum class Piece {
     Rook
 };
 
+enum class IterationDecision {
+    Continue,
+    Break,
+};
+
 struct Square {
-    bool is_null {true};
     std::optional<Piece> piece = std::nullopt;
     std::optional<Color> color = std::nullopt;
 };
@@ -46,9 +51,10 @@ public:
     const std::array<std::array<Square, 14>, 14>& get_board() const;
     std::array<std::array<Square, 14>, 14>& get_board();
     bool point_is_of_color (Point point, Color color) const;
+    IterationDecision position_decision(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point test_position);
     std::vector<Point> get_valid_moves_for_position(Point position, Color player);
     std::vector<Point> get_valid_moves_for_rook(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_bishop(Point position, Color player);
+    std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player);
     std::vector<Point> get_valid_moves_for_king(Point position, Color player);
     std::vector<Point> get_valid_moves_for_queen(Point position, Color player);
     std::vector<Point> get_valid_moves_for_knight(Point position, Color player);
