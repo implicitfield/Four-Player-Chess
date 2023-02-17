@@ -146,6 +146,36 @@ void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player
     }
 }
 
+bool GameState::move_piece_to(const Point& origin, const Point& destination) {
+    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() ||
+        !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
+        return false;
+    bool is_valid_move = false;
+    auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value());
+    for (auto move : valid_moves) {
+        if (move.x == destination.x && move.y == destination.y)
+            is_valid_move = true;
+    }
+    if (!is_valid_move)
+        return false;
+    m_board[destination.x][destination.y].piece = m_board[origin.x][origin.y].piece;
+    m_board[destination.x][destination.y].color = m_board[origin.x][origin.y].color;
+    m_board[origin.x][origin.y].piece = std::nullopt;
+    m_board[origin.x][origin.y].color = std::nullopt;
+    return true;
+}
+
+void GameState::advance_turn() {
+    if (static_cast<int>(m_player) != 3)
+        m_player = static_cast<Color>(static_cast<int>(m_player) + 1);
+    else
+        m_player = static_cast<Color>(0);
+}
+
+Color GameState::get_current_player() const {
+    return m_player;
+}
+
 std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color player) {
     if (!m_board[position.x][position.y].piece.has_value())
         return {};

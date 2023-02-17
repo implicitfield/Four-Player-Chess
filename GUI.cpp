@@ -58,11 +58,11 @@ Color Painter::get_piece_color(int x, int y) {
 }
 
 std::optional<FPC::Point> get_square_from_pixel(FPC::Point point) {
-    auto cell_size = get_cell_size();
-    auto board_width = 14 * cell_size;
-    auto board_height = 14 * cell_size;
+    const auto cell_size = get_cell_size();
+    const auto board_width = 14 * cell_size;
+    const auto board_height = 14 * cell_size;
 
-    if (point.x <= (window_width / 4) + 12 || point.x >= 14 * cell_size + (window_width / 4) + 12)
+    if (point.x <= (window_width / 4) + 12 || point.x >= board_width + (window_width / 4) + 12)
         return std::nullopt;
     if (point.y <= 12 || point.y >= 12 + board_height)
         return std::nullopt;
