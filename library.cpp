@@ -1,4 +1,5 @@
 #include "library.h"
+#include <algorithm>
 #include <iostream>
 
 namespace FPC {
@@ -137,7 +138,7 @@ void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player
             valid_moves.push_back({x, y});
             break;
         }
-        // This is another piece that is owned by the player The path ends here.
+        // This is another piece that is owned by the player. The path ends here.
         if (m_board[x][y].piece.has_value() && point_is_of_color({x, y}, player))
             break;
 
@@ -157,10 +158,30 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination) {
     }
     if (!is_valid_move)
         return false;
+    auto initial_origin_piece = m_board[origin.x][origin.y].piece;
+    auto initial_destination_piece = m_board[destination.x][destination.y].piece;
     m_board[destination.x][destination.y].piece = m_board[origin.x][origin.y].piece;
     m_board[destination.x][destination.y].color = m_board[origin.x][origin.y].color;
     m_board[origin.x][origin.y].piece = std::nullopt;
     m_board[origin.x][origin.y].color = std::nullopt;
+
+    if (m_board[destination.x][destination.y].piece == FPC::Piece::Pawn) {
+        if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 ||
+            std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
+            m_board[destination.x][destination.y].just_double_jumped = true;
+    }
+
+    // Check for "en passant"
+    if (initial_origin_piece.value() == FPC::Piece::Pawn && !initial_destination_piece.has_value()) {
+        if ((m_player == Color::Blue || m_player == Color::Green) && origin.y != destination.y) {
+            m_board[origin.x][destination.y].piece = std::nullopt;
+            m_board[origin.x][destination.y].color = std::nullopt;
+        } else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x) {
+            m_board[destination.x][origin.y].piece = std::nullopt;
+            m_board[destination.x][origin.y].color = std::nullopt;
+        }
+    }
+
     return true;
 }
 
@@ -169,6 +190,24 @@ void GameState::advance_turn() {
         m_player = static_cast<Color>(static_cast<int>(m_player) + 1);
     else
         m_player = static_cast<Color>(0);
+    switch (m_player) {
+        case FPC::Color::Red:
+            for (int i = 3; i < 11; ++i)
+                m_board[i][10].just_double_jumped = false;
+            break;
+        case FPC::Color::Blue:
+            for (int i = 3; i < 11; ++i)
+                m_board[3][i].just_double_jumped = false;
+            break;
+        case FPC::Color::Yellow:
+            for (int i = 3; i < 11; ++i)
+                m_board[i][3].just_double_jumped = false;
+            break;
+        case FPC::Color::Green:
+            for (int i = 3; i < 11; ++i)
+                m_board[10][i].just_double_jumped = false;
+            break;
+    }
 }
 
 Color GameState::get_current_player() const {
@@ -295,6 +334,8 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
     auto push_back_if_valid_capture = [&](Point offset) {
         Point onward {position.x + direction.x + offset.x, position.y + direction.y + offset.y};
         if (is_valid_position(onward.x, onward.y) && m_board[onward.x][onward.y].piece.has_value() && !point_is_of_color(onward, player))
+            valid_moves.push_back(onward);
+        if (m_board[position.x + offset.x][position.y + offset.y].just_double_jumped)
             valid_moves.push_back(onward);
     };
 

@@ -37,6 +37,7 @@ enum class IterationDecision {
 struct Square {
     std::optional<Piece> piece = std::nullopt;
     std::optional<Color> color = std::nullopt;
+    bool just_double_jumped = false; // Used to validate whether performing an "en passant" move is legal.
 };
 
 struct Point {
