@@ -22,7 +22,7 @@ public:
     Painter(FPC::GameState& board, SDL_Renderer* renderer);
     void draw_board();
     void update(FPC::GameState& board);
-    void draw_valid_positions(FPC::Point position, FPC::Color player) const;
+    bool draw_valid_positions(FPC::Point position, FPC::Color player) const;
 
 private:
     Color get_piece_color(int x, int y);

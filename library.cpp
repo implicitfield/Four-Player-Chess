@@ -147,8 +147,7 @@ void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player
 }
 
 bool GameState::move_piece_to(const Point& origin, const Point& destination) {
-    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() ||
-        !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
+    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
         return false;
     bool is_valid_move = false;
     auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value());
@@ -257,45 +256,56 @@ std::vector<Point> GameState::get_valid_moves_for_knight(Point position, Color p
 
 std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color player) {
     std::vector<Point> valid_moves {};
-    Point direction;
+    Point direction {};
     Axis capture_axis = Axis::X;
+    bool may_double_jump = false;
     switch (player) {
         case Color::Red:
-            direction = {position.x, position.y - 1};
+            direction = {0, -1};
+            if (position.y == 12)
+                may_double_jump = true;
             break;
         case Color::Blue:
-            direction = {position.x + 1, position.y};
+            direction = {1, 0};
             capture_axis = Axis::Y;
+            if (position.x == 1)
+                may_double_jump = true;
             break;
         case Color::Yellow:
-            direction = {position.x, position.y + 1};
+            direction = {0, 1};
+            if (position.y == 1)
+                may_double_jump = true;
             break;
         case Color::Green:
-            direction = {position.x - 1, position.y};
+            direction = {-1, 0};
             capture_axis = Axis::Y;
+            if (position.x == 12)
+                may_double_jump = true;
     }
 
-    if (is_valid_position(direction.x, direction.y) && !m_board[direction.x][direction.y].piece.has_value())
-        valid_moves.push_back({direction.x, direction.y});
+    auto push_back_if_valid = [&](Point offset) {
+        if (is_valid_position(position.x + offset.x, position.y + offset.y) && !m_board[position.x + offset.x][position.y + offset.y].piece.has_value())
+            valid_moves.push_back({position.x + offset.x, position.y + offset.y});
+    };
 
-    auto is_valid = [this, player](Point position) -> bool {
-        if (is_valid_position(position.x, position.y) && m_board[position.x][position.y].piece.has_value() && !point_is_of_color(position, player))
-            return true;
-        return false;
+    push_back_if_valid(direction);
+    if (may_double_jump)
+        push_back_if_valid({direction.x * 2, direction.y * 2});
+
+    auto push_back_if_valid_capture = [&](Point offset) {
+        Point onward {position.x + direction.x + offset.x, position.y + direction.y + offset.y};
+        if (is_valid_position(onward.x, onward.y) && m_board[onward.x][onward.y].piece.has_value() && !point_is_of_color(onward, player))
+            valid_moves.push_back(onward);
     };
 
     switch (capture_axis) {
         case Axis::X:
-            if (is_valid({direction.x + 1, direction.y}))
-                valid_moves.push_back({direction.x + 1, direction.y});
-            if (is_valid({direction.x - 1, direction.y}))
-                valid_moves.push_back({direction.x - 1, direction.y});
+            push_back_if_valid_capture({1, 0});
+            push_back_if_valid_capture({-1, 0});
             break;
         case Axis::Y:
-            if (is_valid({direction.x, direction.y + 1}))
-                valid_moves.push_back({direction.x, direction.y + 1});
-            if (is_valid({direction.x, direction.y - 1}))
-                valid_moves.push_back({direction.x, direction.y - 1});
+            push_back_if_valid_capture({0, 1});
+            push_back_if_valid_capture({0, -1});
             break;
     }
 

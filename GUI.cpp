@@ -95,9 +95,11 @@ void Painter::draw_board() {
     }
 }
 
-void Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const {
+bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const {
     int cell_size = get_cell_size();
     auto points = m_board.get_valid_moves_for_position(position, player);
+    if (points.empty())
+        return false;
     for (auto point : points) {
         SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
         int point_x = point.x * cell_size + (window_width / 4) + 12;
@@ -105,6 +107,7 @@ void Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
         SDL_RenderFillRect(m_renderer, &point_rect);
     }
+    return true;
 }
 
 void Painter::update(FPC::GameState& board) {
