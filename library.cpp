@@ -1,5 +1,6 @@
 #include "library.h"
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 namespace FPC {
@@ -147,6 +148,15 @@ void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player
     }
 }
 
+bool GameState::empty_square(const Point& square) {
+    if (!is_valid_position(square.x, square.y))
+        return false;
+    m_board[square.x][square.y].has_moved = false;
+    m_board[square.x][square.y].piece = std::nullopt;
+    m_board[square.x][square.y].color = std::nullopt;
+    return true;
+}
+
 bool GameState::move_piece_to(const Point& origin, const Point& destination) {
     if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
         return false;
@@ -162,12 +172,11 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination) {
     auto initial_destination_piece = m_board[destination.x][destination.y].piece;
     m_board[destination.x][destination.y].piece = m_board[origin.x][origin.y].piece;
     m_board[destination.x][destination.y].color = m_board[origin.x][origin.y].color;
-    m_board[origin.x][origin.y].piece = std::nullopt;
-    m_board[origin.x][origin.y].color = std::nullopt;
+    m_board[destination.x][destination.y].has_moved = true;
+    empty_square(origin);
 
     if (m_board[destination.x][destination.y].piece == FPC::Piece::Pawn) {
-        if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 ||
-            std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
+        if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 || std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
             m_board[destination.x][destination.y].just_double_jumped = true;
     }
 
@@ -179,6 +188,64 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination) {
         } else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x) {
             m_board[destination.x][origin.y].piece = std::nullopt;
             m_board[destination.x][origin.y].color = std::nullopt;
+        }
+    }
+
+    // Check for castling
+    if (m_board[destination.x][destination.y].piece == FPC::Piece::King && (std::abs(destination.x - origin.x) == 2 || std::abs(destination.y - origin.y) == 2)) {
+        switch (m_player) {
+            case Color::Red:
+                if (destination.x == 5) {
+                    empty_square({3, 13});
+                    m_board[6][13].piece = Piece::Rook;
+                    m_board[6][13].color = Color::Red;
+                    m_board[6][13].has_moved = true;
+                } else if (destination.x == 9) {
+                    empty_square({10, 13});
+                    m_board[8][13].piece = Piece::Rook;
+                    m_board[8][13].color = Color::Red;
+                    m_board[8][13].has_moved = true;
+                }
+                break;
+            case Color::Blue:
+                if (destination.y == 4) {
+                    empty_square({0, 3});
+                    m_board[0][5].piece = Piece::Rook;
+                    m_board[0][5].color = Color::Blue;
+                    m_board[0][5].has_moved = true;
+                } else if (destination.y == 8) {
+                    empty_square({0, 10});
+                    m_board[0][7].piece = Piece::Rook;
+                    m_board[0][7].color = Color::Blue;
+                    m_board[0][7].has_moved = true;
+                }
+                break;
+            case Color::Yellow:
+                if (destination.x == 4) {
+                    empty_square({3, 0});
+                    m_board[5][0].piece = Piece::Rook;
+                    m_board[5][0].color = Color::Yellow;
+                    m_board[5][0].has_moved = true;
+                } else if (destination.x == 8) {
+                    empty_square({10, 0});
+                    m_board[7][0].piece = Piece::Rook;
+                    m_board[7][0].color = Color::Yellow;
+                    m_board[7][0].has_moved = true;
+                }
+                break;
+            case Color::Green:
+                if (destination.y == 5) {
+                    empty_square({13, 3});
+                    m_board[13][6].piece = Piece::Rook;
+                    m_board[13][6].color = Color::Green;
+                    m_board[13][6].has_moved = true;
+                } else if (destination.y == 9) {
+                    empty_square({13, 10});
+                    m_board[13][8].piece = Piece::Rook;
+                    m_board[13][8].color = Color::Green;
+                    m_board[13][8].has_moved = true;
+                }
+                break;
         }
     }
 
@@ -261,6 +328,61 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
             if (is_valid_position(row, column) && (row != position.x || column != position.y) && !point_is_of_color({row, column}, player))
                 // TODO: Verify that this isn't a position that is a valid target for other players (checkmate.)
                 valid_moves.push_back({row, column});
+        }
+    }
+
+    auto push_back_castling_move_if_valid = [&](Point queenside_rook, Point kingside_rook, Point axis_map) {
+        bool kingside_path_blocked = false;
+        bool queenside_path_blocked = false;
+        if (!m_board[queenside_rook.x][queenside_rook.y].has_moved) {
+            int target = position.x;
+            if (axis_map.y != 0)
+                target = position.y;
+            for (int i = 4; i < target; ++i) {
+                auto piece = m_board[i][queenside_rook.y].piece;
+                if (axis_map.y != 0)
+                    piece = m_board[queenside_rook.x][i].piece;
+                if (piece.has_value()) {
+                    queenside_path_blocked = true;
+                    break;
+                }
+            }
+        }
+        if (!m_board[kingside_rook.x][kingside_rook.y].has_moved) {
+            int target = position.x;
+            if (axis_map.y != 0)
+                target = position.y;
+            for (int i = target + 1; i < 10; ++i) {
+                auto piece = m_board[i][kingside_rook.y].piece;
+                if (axis_map.y != 0)
+                    piece = m_board[kingside_rook.x][i].piece;
+                if (piece.has_value()) {
+                    kingside_path_blocked = true;
+                    break;
+                }
+            }
+        }
+        if (!queenside_path_blocked)
+            valid_moves.push_back({position.x + axis_map.x, position.y + axis_map.y});
+        if (!kingside_path_blocked)
+            valid_moves.push_back({position.x - axis_map.x, position.y - axis_map.y});
+    };
+
+    // Castling
+    if (!m_board[position.x][position.y].has_moved) {
+        switch (player) {
+            case Color::Red:
+                push_back_castling_move_if_valid({3, 13}, {10, 13}, {-2, 0});
+                break;
+            case Color::Blue:
+                push_back_castling_move_if_valid({0, 10}, {0, 3}, {0, -2});
+                break;
+            case Color::Yellow:
+                push_back_castling_move_if_valid({3, 0}, {10, 0}, {-2, 0});
+                break;
+            case Color::Green:
+                push_back_castling_move_if_valid({13, 10}, {13, 3}, {0, -2});
+                break;
         }
     }
     return valid_moves;

@@ -38,6 +38,7 @@ struct Square {
     std::optional<Piece> piece = std::nullopt;
     std::optional<Color> color = std::nullopt;
     bool just_double_jumped = false; // Used to validate whether performing an "en passant" move is legal.
+    bool has_moved = false;          // Used to validate whether castling is legal.
 };
 
 struct Point {
@@ -53,6 +54,7 @@ public:
     std::array<std::array<Square, 14>, 14>& get_board();
     bool point_is_of_color(Point point, Color color) const;
     void iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map);
+    bool empty_square(const Point& square);
     bool move_piece_to(const Point& origin, const Point& destination);
     void advance_turn();
     Color get_current_player() const;
