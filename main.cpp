@@ -58,7 +58,6 @@ int main() {
                     // internal coordinates used by SDL, so we use scaled coordinates to interface with the library.
                     int x_scaled = event.motion.x * (pixel_width / GUI::window_width);
                     int y_scaled = event.motion.y * (pixel_height / GUI::window_height);
-                    std::cout << "X: " << x_scaled << " Y: " << y_scaled << '\n';
                     auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled});
 
                     const bool square_exists = square_or_empty.has_value();
