@@ -2,6 +2,7 @@
 
 #include "SDL.h"
 #include "library.h"
+#include <array>
 #include <optional>
 
 namespace GUI {
@@ -16,6 +17,7 @@ struct Color {
 };
 
 std::optional<FPC::Point> get_square_from_pixel(FPC::Point point);
+int get_cell_size();
 
 class Painter {
 public:
@@ -23,6 +25,7 @@ public:
     void draw_board();
     void update(FPC::GameState& board);
     bool draw_valid_positions(FPC::Point position, FPC::Color player) const;
+    std::array<SDL_Rect, 4> draw_promotion_dialog(FPC::Point position, FPC::Color player) const;
 
 private:
     Color get_piece_color(int x, int y);

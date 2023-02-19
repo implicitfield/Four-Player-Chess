@@ -8,7 +8,7 @@ Painter::Painter(FPC::GameState& board, SDL_Renderer* renderer)
     , m_renderer(renderer) {
 }
 
-static int get_cell_size() {
+int get_cell_size() {
     int width = window_width / 14 * 2;
     int height = window_height / 14 * 2;
     return std::min(width, height);
@@ -108,6 +108,46 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const
         SDL_RenderFillRect(m_renderer, &point_rect);
     }
     return true;
+}
+
+std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC::Color player) const {
+    std::array<SDL_Rect, 4> promotion_selection {};
+    const int cell_size = get_cell_size();
+    switch (player) {
+        case FPC::Color::Blue:
+            --position.x;
+            if (position.y > 7)
+                position.y = 7;
+            break;
+        case FPC::Color::Green:
+            ++position.x;
+            if (position.y > 7)
+                position.y = 7;
+            break;
+        case FPC::Color::Red:
+            if (position.x == 3)
+                ++position.x;
+            else
+                --position.x;
+            position.y = 0;
+            break;
+        case FPC::Color::Yellow:
+            if (position.x == 10)
+                --position.x;
+            else
+                ++position.x;
+            position.y = 10;
+    }
+    for (int i = 0; i < 4; ++i) {
+        const FPC::Point screen_position {position.x * cell_size + (window_width / 4) + 12, position.y * cell_size + 12};
+        SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
+        SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
+        SDL_RenderFillRect(m_renderer, &point_rect);
+        promotion_selection[i] = point_rect;
+        ++position.y;
+    }
+
+    return promotion_selection;
 }
 
 void Painter::update(FPC::GameState& board) {
