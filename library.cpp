@@ -157,6 +157,31 @@ bool GameState::empty_square(const Point& square) {
     return true;
 }
 
+bool GameState::may_promote(const Point& position, const Color& player) const {
+    const bool piece_has_value_and_is_a_pawn = (m_board[position.x][position.y].piece.has_value() && m_board[position.x][position.y].piece.value() == Piece::Pawn);
+    const bool color_has_value_and_is_owned_by_player = (m_board[position.x][position.y].color.has_value() && m_board[position.x][position.y].color.value() == player);
+    if (!is_valid_position(position.x, position.y) || !piece_has_value_and_is_a_pawn || !color_has_value_and_is_owned_by_player)
+        return false;
+    switch (player) {
+        case Color::Red:
+            if (position.y == 0)
+                return true;
+            return false;
+        case Color::Blue:
+            if (position.x == 13)
+                return true;
+            return false;
+        case Color::Yellow:
+            if (position.y == 13)
+                return true;
+            return false;
+        case Color::Green:
+            if (position.x == 0)
+                return true;
+            return false;
+    }
+}
+
 bool GameState::move_piece_to(const Point& origin, const Point& destination) {
     if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
         return false;

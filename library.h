@@ -19,14 +19,14 @@ enum class Color {
     Green
 };
 
-// Alpahbetically sorted.
+// First four in order of promotion.
 enum class Piece {
-    Bishop,
-    King,
-    Knight,
-    Pawn,
     Queen,
-    Rook
+    Rook,
+    Bishop,
+    Knight,
+    King,
+    Pawn
 };
 
 enum class IterationDecision {
@@ -56,6 +56,7 @@ public:
     void iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map);
     bool empty_square(const Point& square);
     bool move_piece_to(const Point& origin, const Point& destination);
+    bool may_promote(const Point& position, const Color& player) const;
     void advance_turn();
     Color get_current_player() const;
     std::vector<Point> get_valid_moves_for_position(Point position, Color player);
