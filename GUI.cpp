@@ -97,7 +97,7 @@ void Painter::draw_board() {
 
 bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const {
     int cell_size = get_cell_size();
-    auto points = m_board.get_valid_moves_for_position(position, player);
+    auto points = m_board.get_valid_moves_for_position(position, player, true);
     if (points.empty())
         return false;
     for (auto point : points) {
