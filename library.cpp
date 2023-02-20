@@ -131,7 +131,7 @@ void get_piece_name(const GameState& game, int x, int y) {
     }
 }
 
-void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map) {
+void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map) const {
     int x = original_position.x;
     int y = original_position.y;
     while (is_valid_position(x += increment_map.x, y += increment_map.y)) {
@@ -306,7 +306,7 @@ Color GameState::get_current_player() const {
     return m_player;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color player) const {
     if (!m_board[position.x][position.y].piece.has_value())
         return {};
     switch (m_board[position.x][position.y].piece.value()) {
@@ -325,7 +325,7 @@ std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color
     }
 }
 
-std::vector<Point> GameState::get_valid_moves_for_rook(const Point position, const Color player) {
+std::vector<Point> GameState::get_valid_moves_for_rook(const Point position, const Color player) const {
     std::vector<Point> valid_moves {};
 
     iterate_from(valid_moves, player, position, {1, 0});
@@ -336,7 +336,7 @@ std::vector<Point> GameState::get_valid_moves_for_rook(const Point position, con
     return valid_moves;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_bishop(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_bishop(Point position, Color player) const {
     std::vector<Point> valid_moves {};
     iterate_from(valid_moves, player, position, {1, 1});
     iterate_from(valid_moves, player, position, {-1, -1});
@@ -346,13 +346,72 @@ std::vector<Point> GameState::get_valid_moves_for_bishop(Point position, Color p
     return valid_moves;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color player) {
+std::pair<bool, Point> GameState::square_is_under_attack_for_player(Point position, Color player) const {
+    std::array<std::array<std::pair<bool, Point>, 14>, 14> attack_board;
+    auto iterate_position_if_valid = [this, &attack_board, player, position](Point iterate_position) {
+        if (!is_valid_position(iterate_position.x, iterate_position.y))
+            return;
+        if (!m_board[iterate_position.x][iterate_position.y].color.has_value() || !m_board[iterate_position.x][iterate_position.y].piece.has_value())
+            return;
+        if (m_board[iterate_position.x][iterate_position.y].color.value() == player)
+            return;
+        // We cannot recurse this function, so we use an alternative path to find quasi-valid moves for enemy kings, which is good enough for our purposes.
+        auto moves = get_valid_moves_for_king_lite(iterate_position, m_board[iterate_position.x][iterate_position.y].color.value());
+        if (m_board[iterate_position.x][iterate_position.y].piece.value() != Piece::King)
+            moves = get_valid_moves_for_position(iterate_position, m_board[iterate_position.x][iterate_position.y].color.value());
+        for (auto move : moves) {
+            if (move.x == position.x && move.y == position.y) {
+                attack_board[move.x][move.y].first = true;
+                attack_board[move.x][move.y].second = {iterate_position.x, iterate_position.y};
+            }
+        }
+    };
+    for (int x = 3; x < 11; ++x) {
+        for (int y = 0; y < 3; ++y)
+            iterate_position_if_valid({x, y});
+    }
+
+    for (int x = 3; x < 11; ++x) {
+        for (int y = 11; y < 14; ++y)
+            iterate_position_if_valid({x, y});
+    }
+
+    for (int x = 0; x < 14; ++x) {
+        for (int y = 3; y < 11; ++y)
+            iterate_position_if_valid({x, y});
+    }
+    return attack_board[position.x][position.y];
+}
+
+// This function does not ensure that the king is not placed in check. It is for internal use only.
+std::vector<Point> GameState::get_valid_moves_for_king_lite(Point position, Color player) const {
     std::vector<Point> valid_moves {};
     for (int row = position.x - 1; row < position.x + 2; ++row) {
         for (int column = position.y - 1; column < position.y + 2; ++column) {
             if (is_valid_position(row, column) && (row != position.x || column != position.y) && !point_is_of_color({row, column}, player))
-                // TODO: Verify that this isn't a position that is a valid target for other players (checkmate.)
                 valid_moves.push_back({row, column});
+        }
+    }
+    return valid_moves;
+}
+
+std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color player) const {
+    std::vector<Point> valid_moves {};
+    GameState board_without_king {*this};
+    board_without_king.empty_square({position.x, position.y});
+    for (int row = position.x - 1; row < position.x + 2; ++row) {
+        for (int column = position.y - 1; column < position.y + 2; ++column) {
+            if (is_valid_position(row, column) && (row != position.x || column != position.y) && !point_is_of_color({row, column}, player)) {
+                auto square_data = board_without_king.square_is_under_attack_for_player({row, column}, player);
+                if (!square_data.first)
+                    valid_moves.push_back({row, column});
+                /*
+                if (std::abs(position.x - square_data.second.x) <= 1 && std::abs(position.y - square_data.second.y) <= 1) {
+                    if(!board_without_king.square_is_under_attack_for_player({square_data.second.x, square_data.second.y}, player).first)
+                        valid_moves.push_back({square_data.second.x, square_data.second.y});
+                }
+                */
+            }
         }
     }
 
@@ -394,7 +453,7 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
     };
 
     // Castling
-    if (!m_board[position.x][position.y].has_moved) {
+    if (!m_board[position.x][position.y].has_moved && !square_is_under_attack_for_player(position, player).first) {
         switch (player) {
             case Color::Red:
                 push_back_castling_move_if_valid({3, 13}, {10, 13}, {-2, 0});
@@ -413,14 +472,14 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
     return valid_moves;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_queen(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_queen(Point position, Color player) const {
     auto valid_moves = get_valid_moves_for_bishop(position, player);
     auto straight_moves = get_valid_moves_for_rook(position, player);
     valid_moves.insert(valid_moves.end(), straight_moves.begin(), straight_moves.end());
     return valid_moves;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_knight(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_knight(Point position, Color player) const {
     std::vector<Point> valid_moves {};
     auto push_back_if_valid = [&](int x, int y) {
         if (is_valid_position(x, y) && !point_is_of_color({x, y}, player))
@@ -440,7 +499,7 @@ std::vector<Point> GameState::get_valid_moves_for_knight(Point position, Color p
     return valid_moves;
 }
 
-std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color player) {
+std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color player) const {
     std::vector<Point> valid_moves {};
     Point direction {};
     Axis capture_axis = Axis::X;

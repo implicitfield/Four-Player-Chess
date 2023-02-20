@@ -2,6 +2,7 @@
 
 #include <array>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace FPC {
@@ -53,21 +54,23 @@ public:
     const std::array<std::array<Square, 14>, 14>& get_board() const;
     std::array<std::array<Square, 14>, 14>& get_board();
     bool point_is_of_color(Point point, Color color) const;
-    void iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map);
+    void iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map) const;
     bool empty_square(const Point& square);
     bool move_piece_to(const Point& origin, const Point& destination);
     bool may_promote(const Point& position, const Color& player) const;
     void advance_turn();
     Color get_current_player() const;
-    std::vector<Point> get_valid_moves_for_position(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_rook(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player);
-    std::vector<Point> get_valid_moves_for_king(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_queen(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_knight(Point position, Color player);
-    std::vector<Point> get_valid_moves_for_pawn(Point position, Color player);
+    std::vector<Point> get_valid_moves_for_position(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_rook(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_king(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_queen(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_knight(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_pawn(Point position, Color player) const;
 
 private:
+    std::pair<bool, Point> square_is_under_attack_for_player(Point position, Color player) const;
+    std::vector<Point> get_valid_moves_for_king_lite(Point position, Color player) const;
     std::array<std::array<Square, 14>, 14> m_board;
     Color m_player {Color::Red};
 };
