@@ -40,25 +40,6 @@ void GameState::reset() {
 
     m_king_positions[0] = {7, 13};
 
-    // Setup yellow.
-    for (int x = 3; x < 11; ++x) {
-        for (int y = 0; y < 2; ++y) {
-            m_board[x][y].color = Color::Yellow;
-        }
-    }
-    m_board[3][0].piece = Piece::Rook;
-    m_board[4][0].piece = Piece::Knight;
-    m_board[5][0].piece = Piece::Bishop;
-    m_board[6][0].piece = Piece::King;
-    m_board[7][0].piece = Piece::Queen;
-    m_board[8][0].piece = Piece::Bishop;
-    m_board[9][0].piece = Piece::Knight;
-    m_board[10][0].piece = Piece::Rook;
-    for (int i = 3; i < 11; ++i)
-        m_board[i][1].piece = Piece::Pawn;
-
-    m_king_positions[2] = {6, 0};
-
     // Setup blue.
     for (int x = 0; x < 2; ++x) {
         for (int y = 3; y < 11; ++y) {
@@ -77,6 +58,25 @@ void GameState::reset() {
         m_board[1][i].piece = Piece::Pawn;
 
     m_king_positions[1] = {0, 6};
+
+    // Setup yellow.
+    for (int x = 3; x < 11; ++x) {
+        for (int y = 0; y < 2; ++y) {
+            m_board[x][y].color = Color::Yellow;
+        }
+    }
+    m_board[3][0].piece = Piece::Rook;
+    m_board[4][0].piece = Piece::Knight;
+    m_board[5][0].piece = Piece::Bishop;
+    m_board[6][0].piece = Piece::King;
+    m_board[7][0].piece = Piece::Queen;
+    m_board[8][0].piece = Piece::Bishop;
+    m_board[9][0].piece = Piece::Knight;
+    m_board[10][0].piece = Piece::Rook;
+    for (int i = 3; i < 11; ++i)
+        m_board[i][1].piece = Piece::Pawn;
+
+    m_king_positions[2] = {6, 0};
 
     // Setup green.
     for (int x = 12; x < 14; ++x) {
