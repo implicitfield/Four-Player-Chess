@@ -87,7 +87,7 @@ int main() {
                             }
                         }
                     } else if (draw_positions) {
-                        if (game.move_piece_to(square, square_or_empty.value())) {
+                        if (game.move_piece_to(square, square_or_empty.value(), true)) {
                             if (game.may_promote(square_or_empty.value(), game.get_current_player()))
                                 promotion_dialog_active = true;
                             else
