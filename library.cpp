@@ -528,13 +528,15 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
                 may_double_jump = true;
     }
 
-    auto push_back_if_valid = [&](Point offset) {
-        if (is_valid_position(position.x + offset.x, position.y + offset.y) && !m_board[position.x + offset.x][position.y + offset.y].piece.has_value())
+    auto push_back_if_valid = [&](Point offset) -> bool {
+        if (is_valid_position(position.x + offset.x, position.y + offset.y) && !m_board[position.x + offset.x][position.y + offset.y].piece.has_value()) {
             valid_moves.push_back({position.x + offset.x, position.y + offset.y});
+            return true;
+        }
+        return false;
     };
 
-    push_back_if_valid(direction);
-    if (may_double_jump)
+    if (push_back_if_valid(direction) && may_double_jump)
         push_back_if_valid({direction.x * 2, direction.y * 2});
 
     auto push_back_if_valid_capture = [&](Point offset) {
