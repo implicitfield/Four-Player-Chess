@@ -41,6 +41,9 @@ Color Painter::get_piece_color(int x, int y) {
     if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value())
         return {0xFF, 0xFF, 0xFF};
 
+    if (!m_board.player_exists(m_board.get_board()[x][y].color.value()))
+        return {200, 200, 200};
+
     Color additive_color {0xFF, 0xFF, 0xFF};
     switch (m_board.get_board()[x][y].color.value()) {
         case FPC::Color::Red:
