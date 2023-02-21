@@ -60,10 +60,7 @@ int main() {
                     int y_scaled = event.motion.y * (pixel_height / GUI::window_height);
                     auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled});
 
-                    const bool square_exists = square_or_empty.has_value();
-                    const bool point_is_owned_by_player = game.point_is_of_color(square_or_empty.value(), game.get_current_player());
-
-                    if (!square_exists || (!draw_positions && !point_is_owned_by_player && !promotion_dialog_active)) {
+                    if (!square_or_empty.has_value() || (!draw_positions && !game.point_is_of_color(square_or_empty.value(), game.get_current_player()) && !promotion_dialog_active)) {
                         draw_positions = false;
                         break;
                     }
