@@ -80,16 +80,17 @@ public:
 private:
     std::pair<bool, Point> square_is_under_attack_for_player(Point position, Color player) const;
     std::vector<Point> get_valid_moves_for_king_lite(Point position, Color player) const;
-    std::vector<Point> generate_king_protection_moves_if_needed(const Point origin, const std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const;
+    std::vector<Point> generate_king_protection_moves_if_needed(const Point origin, std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const;
+    void unsafe_move_piece_to(const Point& origin, const Point& destination);
     std::array<std::array<Square, 14>, 14> m_board;
     Color m_player {Color::Red};
     // Must be accessed in the same order as the 'Color' enum.
-    std::array<Point, 4> m_king_positions {Point{7, 13}, Point{0, 6}, Point{6, 0}, Point{13, 7}};
+    std::array<Point, 4> m_king_positions {Point {7, 13}, Point {0, 6}, Point {6, 0}, Point {13, 7}};
     std::vector<Color> m_current_players {
         Color::Red,
         Color::Blue,
         Color::Yellow,
-        Color::Green
+        Color::Green,
     };
 };
 
