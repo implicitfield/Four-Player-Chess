@@ -427,17 +427,14 @@ std::vector<Point> GameState::get_valid_moves_for_king_lite(Point position, Colo
 
 std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color player) const {
     std::vector<Point> valid_moves {};
-    GameState board_without_king {*this};
-    board_without_king.empty_square({position.x, position.y});
-    for (int row = position.x - 1; row < position.x + 2; ++row) {
-        for (int column = position.y - 1; column < position.y + 2; ++column) {
-            Point current_position {row, column};
-            if (is_valid_position(current_position) && (current_position != position) && !point_is_of_color(current_position, player)) {
-                auto square_data = board_without_king.square_is_under_attack_for_player(current_position, player);
-                if (!square_data.first)
-                    valid_moves.push_back(current_position);
-            }
-        }
+    for (auto move : get_valid_moves_for_king_lite(position, player)) {
+        GameState test_board {*this};
+        test_board.m_board[move.x][move.y].piece = Piece::King;
+        test_board.m_board[move.x][move.y].color = player;
+        test_board.m_board[move.x][move.y].has_moved = true;
+        test_board.empty_square(position);
+        if (!test_board.square_is_under_attack_for_player(move, player).first)
+            valid_moves.push_back(move);
     }
 
     auto push_back_castling_move_if_valid = [&](Point queenside_rook, Point kingside_rook, Point axis_map) {
