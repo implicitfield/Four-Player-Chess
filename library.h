@@ -87,6 +87,6 @@ private:
 };
 
 void get_piece_name(const GameState& game, int x, int y);
-bool is_valid_position(int row, int column);
+bool is_valid_position(const FPC::Point& position);
 
 }

@@ -5,13 +5,13 @@
 
 namespace FPC {
 
-bool is_valid_position(int row, int column) {
-    if (row < 0 || column < 0 || row > 13 || column > 13)
+bool is_valid_position(const FPC::Point& position) {
+    if (position.x < 0 || position.y < 0 || position.x > 13 || position.y > 13)
         return false;
-    if (((row == 0 || row == 1 || row == 2) && (column == 0 || column == 1 || column == 2))
-        || ((row == 13 || row == 12 || row == 11) && (column == 13 || column == 12 || column == 11))
-        || ((row == 0 || row == 1 || row == 2) && (column == 13 || column == 12 || column == 11))
-        || ((row == 13 || row == 12 || row == 11) && (column == 0 || column == 1 || column == 2)))
+    if ((position.x < 3 && position.y < 3)
+        || (position.x > 10 && position.y > 10)
+        || (position.x < 3 && position.y > 10)
+        || (position.x > 10 && position.y < 3))
         return false;
     return true;
 }
@@ -142,7 +142,7 @@ void get_piece_name(const GameState& game, int x, int y) {
 void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map) const {
     int x = original_position.x;
     int y = original_position.y;
-    while (is_valid_position(x += increment_map.x, y += increment_map.y)) {
+    while (is_valid_position({x += increment_map.x, y += increment_map.y})) {
         if (m_board[x][y].piece.has_value() && !point_is_of_color({x, y}, player)) {
             valid_moves.push_back({x, y});
             break;
@@ -157,7 +157,7 @@ void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player
 }
 
 bool GameState::empty_square(const Point& square) {
-    if (!is_valid_position(square.x, square.y))
+    if (!is_valid_position(square))
         return false;
     m_board[square.x][square.y].has_moved = false;
     m_board[square.x][square.y].piece = std::nullopt;
@@ -168,7 +168,7 @@ bool GameState::empty_square(const Point& square) {
 bool GameState::may_promote(const Point& position, const Color& player) const {
     const bool piece_has_value_and_is_a_pawn = (m_board[position.x][position.y].piece.has_value() && m_board[position.x][position.y].piece.value() == Piece::Pawn);
     const bool color_has_value_and_is_owned_by_player = (m_board[position.x][position.y].color.has_value() && m_board[position.x][position.y].color.value() == player);
-    if (!is_valid_position(position.x, position.y) || !piece_has_value_and_is_a_pawn || !color_has_value_and_is_owned_by_player)
+    if (!is_valid_position(position) || !piece_has_value_and_is_a_pawn || !color_has_value_and_is_owned_by_player)
         return false;
     switch (player) {
         case Color::Red:
@@ -191,7 +191,7 @@ bool GameState::may_promote(const Point& position, const Color& player) const {
 }
 
 bool GameState::move_piece_to(const Point& origin, const Point& destination, bool enforce_king_protection) {
-    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin.x, origin.y) || !is_valid_position(destination.x, destination.y))
+    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin) || !is_valid_position(destination))
         return false;
     bool is_valid_move = false;
     auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value(), enforce_king_protection);
@@ -378,7 +378,7 @@ std::vector<Point> GameState::get_valid_moves_for_bishop(Point position, Color p
 std::pair<bool, Point> GameState::square_is_under_attack_for_player(Point position, Color player) const {
     std::array<std::array<std::pair<bool, Point>, 14>, 14> attack_board;
     auto iterate_position_if_valid = [this, &attack_board, player, position](Point iterate_position) {
-        if (!is_valid_position(iterate_position.x, iterate_position.y))
+        if (!is_valid_position(iterate_position))
             return;
         if (!m_board[iterate_position.x][iterate_position.y].color.has_value() || !m_board[iterate_position.x][iterate_position.y].piece.has_value())
             return;
@@ -417,8 +417,9 @@ std::vector<Point> GameState::get_valid_moves_for_king_lite(Point position, Colo
     std::vector<Point> valid_moves {};
     for (int row = position.x - 1; row < position.x + 2; ++row) {
         for (int column = position.y - 1; column < position.y + 2; ++column) {
-            if (is_valid_position(row, column) && (row != position.x || column != position.y) && !point_is_of_color({row, column}, player))
-                valid_moves.push_back({row, column});
+            Point current_position {row, column};
+            if (is_valid_position(current_position) && (current_position != position) && !point_is_of_color(current_position, player))
+                valid_moves.push_back(current_position);
         }
     }
     return valid_moves;
@@ -430,16 +431,11 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
     board_without_king.empty_square({position.x, position.y});
     for (int row = position.x - 1; row < position.x + 2; ++row) {
         for (int column = position.y - 1; column < position.y + 2; ++column) {
-            if (is_valid_position(row, column) && (row != position.x || column != position.y) && !point_is_of_color({row, column}, player)) {
-                auto square_data = board_without_king.square_is_under_attack_for_player({row, column}, player);
+            Point current_position {row, column};
+            if (is_valid_position(current_position) && (current_position != position) && !point_is_of_color(current_position, player)) {
+                auto square_data = board_without_king.square_is_under_attack_for_player(current_position, player);
                 if (!square_data.first)
-                    valid_moves.push_back({row, column});
-                /*
-                if (std::abs(position.x - square_data.second.x) <= 1 && std::abs(position.y - square_data.second.y) <= 1) {
-                    if(!board_without_king.square_is_under_attack_for_player({square_data.second.x, square_data.second.y}, player).first)
-                        valid_moves.push_back({square_data.second.x, square_data.second.y});
-                }
-                */
+                    valid_moves.push_back(current_position);
             }
         }
     }
@@ -510,20 +506,20 @@ std::vector<Point> GameState::get_valid_moves_for_queen(Point position, Color pl
 
 std::vector<Point> GameState::get_valid_moves_for_knight(Point position, Color player, bool enforce_king_protection) const {
     std::vector<Point> valid_moves {};
-    auto push_back_if_valid = [&](int x, int y) {
-        if (is_valid_position(x, y) && !point_is_of_color({x, y}, player))
-            valid_moves.push_back({x, y});
+    auto push_back_if_valid = [&](const Point& position) {
+        if (is_valid_position(position) && !point_is_of_color(position, player))
+            valid_moves.push_back(position);
     };
 
-    push_back_if_valid(position.x - 2, position.y - 1);
-    push_back_if_valid(position.x - 1, position.y - 2);
-    push_back_if_valid(position.x + 1, position.y - 2);
-    push_back_if_valid(position.x + 2, position.y - 1);
+    push_back_if_valid({position.x - 2, position.y - 1});
+    push_back_if_valid({position.x - 1, position.y - 2});
+    push_back_if_valid({position.x + 1, position.y - 2});
+    push_back_if_valid({position.x + 2, position.y - 1});
 
-    push_back_if_valid(position.x - 2, position.y + 1);
-    push_back_if_valid(position.x - 1, position.y + 2);
-    push_back_if_valid(position.x + 1, position.y + 2);
-    push_back_if_valid(position.x + 2, position.y + 1);
+    push_back_if_valid({position.x - 2, position.y + 1});
+    push_back_if_valid({position.x - 1, position.y + 2});
+    push_back_if_valid({position.x + 1, position.y + 2});
+    push_back_if_valid({position.x + 2, position.y + 1});
 
     return generate_king_protection_moves_if_needed(position, valid_moves, player, enforce_king_protection);
 }
@@ -558,7 +554,7 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
     }
 
     auto push_back_if_valid = [&](Point offset) -> bool {
-        if (is_valid_position(position.x + offset.x, position.y + offset.y) && !m_board[position.x + offset.x][position.y + offset.y].piece.has_value()) {
+        if (is_valid_position({position.x + offset.x, position.y + offset.y}) && !m_board[position.x + offset.x][position.y + offset.y].piece.has_value()) {
             valid_moves.push_back({position.x + offset.x, position.y + offset.y});
             return true;
         }
@@ -570,7 +566,7 @@ std::vector<Point> GameState::get_valid_moves_for_pawn(Point position, Color pla
 
     auto push_back_if_valid_capture = [&](Point offset) {
         Point onward {position.x + direction.x + offset.x, position.y + direction.y + offset.y};
-        if (is_valid_position(onward.x, onward.y) && m_board[onward.x][onward.y].piece.has_value() && !point_is_of_color(onward, player))
+        if (is_valid_position(onward) && m_board[onward.x][onward.y].piece.has_value() && !point_is_of_color(onward, player))
             valid_moves.push_back(onward);
         if (m_board[position.x + offset.x][position.y + offset.y].just_double_jumped)
             valid_moves.push_back(onward);
