@@ -85,17 +85,17 @@ std::optional<FPC::Point> get_square_from_pixel(FPC::Point point) {
     if (point.y <= 12 || point.y >= 12 + board_height)
         return std::nullopt;
     auto output = FPC::Point {(point.x - ((window_width / 4) + 12)) / cell_size, (point.y - 12) / cell_size};
-    // Filter out positions outside the board.
-    if (!FPC::is_valid_position(output.x, output.y))
+    // Filter out positions outside of the board.
+    if (!FPC::is_valid_position(output))
         return std::nullopt;
     return output;
 }
 
 void Painter::draw_board() {
     int cell_size = get_cell_size();
-    for (size_t row = 0; row < 14; ++row) {
-        for (size_t column = 0; column < 14; ++column) {
-            if (!FPC::is_valid_position(row, column))
+    for (int row = 0; row < 14; ++row) {
+        for (int column = 0; column < 14; ++column) {
+            if (!FPC::is_valid_position({row, column}))
                 continue;
             int cell_x = row * cell_size + (window_width / 4) + 12;
             int cell_y = column * cell_size + 12;
