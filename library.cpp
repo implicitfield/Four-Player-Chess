@@ -196,7 +196,7 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
     bool is_valid_move = false;
     auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value(), enforce_king_protection);
     for (auto move : valid_moves) {
-        if (move.x == destination.x && move.y == destination.y)
+        if (move == destination)
             is_valid_move = true;
     }
     if (!is_valid_move)
@@ -389,7 +389,7 @@ std::pair<bool, Point> GameState::square_is_under_attack_for_player(Point positi
         if (m_board[iterate_position.x][iterate_position.y].piece.value() != Piece::King)
             moves = get_valid_moves_for_position(iterate_position, m_board[iterate_position.x][iterate_position.y].color.value(), false);
         for (auto move : moves) {
-            if (move.x == position.x && move.y == position.y) {
+            if (move == position) {
                 attack_board[move.x][move.y].first = true;
                 attack_board[move.x][move.y].second = {iterate_position.x, iterate_position.y};
             }
