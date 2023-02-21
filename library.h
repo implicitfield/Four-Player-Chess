@@ -68,6 +68,7 @@ public:
     bool may_promote(const Point& position, const Color& player) const;
     void advance_turn();
     Color get_current_player() const;
+    const std::vector<Color>& get_current_players() const;
     std::vector<Point> get_valid_moves_for_position(Point position, Color player, bool enforce_king_protection) const;
     std::vector<Point> get_valid_moves_for_rook(Point position, Color player, bool enforce_king_protection) const;
     std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player, bool enforce_king_protection) const;
@@ -83,7 +84,13 @@ private:
     std::array<std::array<Square, 14>, 14> m_board;
     Color m_player {Color::Red};
     // Must be accessed in the same order as the 'Color' enum.
-    std::array<Point, 4> m_king_positions;
+    std::array<Point, 4> m_king_positions {Point{7, 13}, Point{0, 6}, Point{6, 0}, Point{13, 7}};
+    std::vector<Color> m_current_players {
+        Color::Red,
+        Color::Blue,
+        Color::Yellow,
+        Color::Green
+    };
 };
 
 void get_piece_name(const GameState& game, int x, int y);

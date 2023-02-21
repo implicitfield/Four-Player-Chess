@@ -38,8 +38,6 @@ void GameState::reset() {
     for (int i = 3; i < 11; ++i)
         m_board[i][12].piece = Piece::Pawn;
 
-    m_king_positions[0] = {7, 13};
-
     // Setup blue.
     for (int x = 0; x < 2; ++x) {
         for (int y = 3; y < 11; ++y) {
@@ -56,8 +54,6 @@ void GameState::reset() {
     m_board[0][10].piece = Piece::Rook;
     for (int i = 3; i < 11; ++i)
         m_board[1][i].piece = Piece::Pawn;
-
-    m_king_positions[1] = {0, 6};
 
     // Setup yellow.
     for (int x = 3; x < 11; ++x) {
@@ -76,8 +72,6 @@ void GameState::reset() {
     for (int i = 3; i < 11; ++i)
         m_board[i][1].piece = Piece::Pawn;
 
-    m_king_positions[2] = {6, 0};
-
     // Setup green.
     for (int x = 12; x < 14; ++x) {
         for (int y = 3; y < 11; ++y) {
@@ -94,8 +88,6 @@ void GameState::reset() {
     m_board[13][10].piece = Piece::Rook;
     for (int i = 3; i < 11; ++i)
         m_board[12][i].piece = Piece::Pawn;
-
-    m_king_positions[3] = {13, 7};
 }
 
 const std::array<std::array<Square, 14>, 14>& GameState::get_board() const {
@@ -290,10 +282,16 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
 }
 
 void GameState::advance_turn() {
-    if (static_cast<int>(m_player) != 3)
-        m_player = static_cast<Color>(static_cast<int>(m_player) + 1);
-    else
-        m_player = static_cast<Color>(0);
+    for (std::vector<FPC::Color>::size_type i = 0; i < m_current_players.size(); ++i) {
+        if (m_current_players[i] == m_player) {
+            if (i != m_current_players.size() - 1)
+                m_player = m_current_players[i + 1];
+            else
+                m_player = m_current_players[0];
+            break;
+        }
+    }
+
     switch (m_player) {
         case FPC::Color::Red:
             for (int i = 3; i < 11; ++i)
@@ -316,6 +314,10 @@ void GameState::advance_turn() {
 
 Color GameState::get_current_player() const {
     return m_player;
+}
+
+const std::vector<Color>& GameState::get_current_players() const {
+    return m_current_players;
 }
 
 std::vector<Point> GameState::generate_king_protection_moves_if_needed(const Point origin, const std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const {
