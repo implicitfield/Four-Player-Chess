@@ -19,6 +19,24 @@ static Color blend_color(Color first, Color second) {
     return {(first.red + second.red) / scale, (first.green + second.green) / scale, (first.blue + second.blue) / scale};
 }
 
+PositionCache::PositionCache(FPC::Point position, FPC::Color player, const std::vector<FPC::Point>& cached_moves) {
+    m_position = position;
+    m_player = player;
+    m_cached_moves = cached_moves;
+}
+
+const std::vector<FPC::Point>& PositionCache::get_cached_moves() const {
+    return m_cached_moves;
+}
+
+const FPC::Point& PositionCache::get_cached_position() const {
+    return m_position;
+}
+
+const FPC::Color& PositionCache::get_cached_player() const {
+    return m_player;
+}
+
 Color Painter::get_piece_color(int x, int y) {
     if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value())
         return {0xFF, 0xFF, 0xFF};
@@ -95,9 +113,15 @@ void Painter::draw_board() {
     }
 }
 
-bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) const {
+bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
+    std::vector<FPC::Point> points;
+    if (!m_position_cache.has_value() || (m_position_cache.value().get_cached_position().x != position.x || m_position_cache.value().get_cached_position().y != position.y || m_position_cache.value().get_cached_player() != player)) {
+        points = m_board.get_valid_moves_for_position(position, player, true);
+        m_position_cache = {position, player, points};
+    } else
+        points = m_position_cache.value().get_cached_moves();
+
     int cell_size = get_cell_size();
-    auto points = m_board.get_valid_moves_for_position(position, player, true);
     if (points.empty())
         return false;
     for (auto point : points) {
