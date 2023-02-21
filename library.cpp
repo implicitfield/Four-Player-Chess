@@ -182,6 +182,13 @@ bool GameState::may_promote(const Point& position, const Color& player) const {
     }
 }
 
+void GameState::unsafe_move_piece_to(const Point& origin, const Point& destination) {
+    m_board[destination.x][destination.y].piece = m_board[origin.x][origin.y].piece;
+    m_board[destination.x][destination.y].color = m_board[origin.x][origin.y].color;
+    m_board[destination.x][destination.y].has_moved = true;
+    empty_square(origin);
+}
+
 bool GameState::move_piece_to(const Point& origin, const Point& destination, bool enforce_king_protection) {
     if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin) || !is_valid_position(destination))
         return false;
@@ -195,10 +202,7 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
         return false;
     auto initial_origin_piece = m_board[origin.x][origin.y].piece;
     auto initial_destination_piece = m_board[destination.x][destination.y].piece;
-    m_board[destination.x][destination.y].piece = m_board[origin.x][origin.y].piece;
-    m_board[destination.x][destination.y].color = m_board[origin.x][origin.y].color;
-    m_board[destination.x][destination.y].has_moved = true;
-    empty_square(origin);
+    unsafe_move_piece_to(origin, destination);
 
     if (m_board[destination.x][destination.y].piece == FPC::Piece::Pawn) {
         if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 || std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
@@ -207,69 +211,38 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
 
     // Check for "en passant"
     if (initial_origin_piece.value() == FPC::Piece::Pawn && !initial_destination_piece.has_value()) {
-        if ((m_player == Color::Blue || m_player == Color::Green) && origin.y != destination.y) {
-            m_board[origin.x][destination.y].piece = std::nullopt;
-            m_board[origin.x][destination.y].color = std::nullopt;
-        } else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x) {
-            m_board[destination.x][origin.y].piece = std::nullopt;
-            m_board[destination.x][origin.y].color = std::nullopt;
-        }
+        if ((m_player == Color::Blue || m_player == Color::Green) && origin.y != destination.y)
+            empty_square({origin.x, destination.y});
+        else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x)
+            empty_square({destination.x, origin.y});
     }
 
     // Check for castling
     if (m_board[destination.x][destination.y].piece == FPC::Piece::King && (std::abs(destination.x - origin.x) == 2 || std::abs(destination.y - origin.y) == 2)) {
         switch (m_player) {
             case Color::Red:
-                if (destination.x == 5) {
-                    empty_square({3, 13});
-                    m_board[6][13].piece = Piece::Rook;
-                    m_board[6][13].color = Color::Red;
-                    m_board[6][13].has_moved = true;
-                } else if (destination.x == 9) {
-                    empty_square({10, 13});
-                    m_board[8][13].piece = Piece::Rook;
-                    m_board[8][13].color = Color::Red;
-                    m_board[8][13].has_moved = true;
-                }
+                if (destination.x == 5)
+                    unsafe_move_piece_to({3, 13}, {6, 13});
+                else if (destination.x == 9)
+                    unsafe_move_piece_to({10, 13}, {8, 13});
                 break;
             case Color::Blue:
-                if (destination.y == 4) {
-                    empty_square({0, 3});
-                    m_board[0][5].piece = Piece::Rook;
-                    m_board[0][5].color = Color::Blue;
-                    m_board[0][5].has_moved = true;
-                } else if (destination.y == 8) {
-                    empty_square({0, 10});
-                    m_board[0][7].piece = Piece::Rook;
-                    m_board[0][7].color = Color::Blue;
-                    m_board[0][7].has_moved = true;
-                }
+                if (destination.y == 4)
+                    unsafe_move_piece_to({0, 3}, {0, 5});
+                else if (destination.y == 8)
+                    unsafe_move_piece_to({0, 10}, {0, 7});
                 break;
             case Color::Yellow:
-                if (destination.x == 4) {
-                    empty_square({3, 0});
-                    m_board[5][0].piece = Piece::Rook;
-                    m_board[5][0].color = Color::Yellow;
-                    m_board[5][0].has_moved = true;
-                } else if (destination.x == 8) {
-                    empty_square({10, 0});
-                    m_board[7][0].piece = Piece::Rook;
-                    m_board[7][0].color = Color::Yellow;
-                    m_board[7][0].has_moved = true;
-                }
+                if (destination.x == 4)
+                    unsafe_move_piece_to({3, 0}, {5, 0});
+                else if (destination.x == 8)
+                    unsafe_move_piece_to({10, 0}, {7, 0});
                 break;
             case Color::Green:
-                if (destination.y == 5) {
-                    empty_square({13, 3});
-                    m_board[13][6].piece = Piece::Rook;
-                    m_board[13][6].color = Color::Green;
-                    m_board[13][6].has_moved = true;
-                } else if (destination.y == 9) {
-                    empty_square({13, 10});
-                    m_board[13][8].piece = Piece::Rook;
-                    m_board[13][8].color = Color::Green;
-                    m_board[13][8].has_moved = true;
-                }
+                if (destination.y == 5)
+                    unsafe_move_piece_to({13, 3}, {13, 6});
+                else if (destination.y == 9)
+                    unsafe_move_piece_to({13, 10}, {13, 8});
                 break;
         }
     }
@@ -320,7 +293,7 @@ const std::vector<Color>& GameState::get_current_players() const {
     return m_current_players;
 }
 
-std::vector<Point> GameState::generate_king_protection_moves_if_needed(const Point origin, const std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const {
+std::vector<Point> GameState::generate_king_protection_moves_if_needed(const Point origin, std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const {
     if (!enforce_king_protection)
         return valid_moves;
     auto piece_attacking_king = square_is_under_attack_for_player(m_king_positions[static_cast<int>(player)], player);
@@ -328,12 +301,20 @@ std::vector<Point> GameState::generate_king_protection_moves_if_needed(const Poi
         std::vector<Point> king_protection_moves;
         for (auto move : valid_moves) {
             GameState test_board {*this};
-            test_board.move_piece_to(origin, move, false);
+            test_board.unsafe_move_piece_to(origin, move);
             if (!test_board.square_is_under_attack_for_player(test_board.m_king_positions[static_cast<int>(player)], player).first)
                 king_protection_moves.push_back(move);
         }
         return king_protection_moves;
     }
+
+    auto move_makes_king_vulnerable = [&](const Point& move) -> bool {
+        GameState test_board {*this};
+        test_board.unsafe_move_piece_to(origin, move);
+        return test_board.square_is_under_attack_for_player(test_board.m_king_positions[static_cast<int>(player)], player).first;
+    };
+
+    valid_moves.erase(std::remove_if(valid_moves.begin(), valid_moves.end(), move_makes_king_vulnerable), valid_moves.end());
     return valid_moves;
 }
 
