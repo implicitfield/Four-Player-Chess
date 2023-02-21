@@ -115,7 +115,7 @@ void Painter::draw_board() {
 
 bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
     std::vector<FPC::Point> points;
-    if (!m_position_cache.has_value() || (m_position_cache.value().get_cached_position().x != position.x || m_position_cache.value().get_cached_position().y != position.y || m_position_cache.value().get_cached_player() != player)) {
+    if (!m_position_cache.has_value() || m_position_cache.value().get_cached_position() != position || m_position_cache.value().get_cached_player() != player) {
         points = m_board.get_valid_moves_for_position(position, player, true);
         m_position_cache = {position, player, points};
     } else

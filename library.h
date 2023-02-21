@@ -45,6 +45,14 @@ struct Square {
 struct Point {
     int x = 0;
     int y = 0;
+
+    bool operator==(const Point& rhs) const {
+        return x == rhs.x && y == rhs.y;
+    }
+
+    bool operator!=(const Point& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 class GameState {
