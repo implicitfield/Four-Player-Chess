@@ -534,9 +534,20 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
 }
 
 std::vector<Point> GameState::get_valid_moves_for_queen(Point position, Color player, bool enforce_king_protection) const {
-    auto valid_moves = get_valid_moves_for_bishop(position, player, enforce_king_protection);
-    auto straight_moves = get_valid_moves_for_rook(position, player, enforce_king_protection);
-    valid_moves.insert(valid_moves.end(), straight_moves.begin(), straight_moves.end());
+    std::vector<Point> valid_moves {};
+
+    // Horizontal & vertical moves.
+    iterate_from(valid_moves, player, position, {1, 0});
+    iterate_from(valid_moves, player, position, {-1, 0});
+    iterate_from(valid_moves, player, position, {0, 1});
+    iterate_from(valid_moves, player, position, {0, -1});
+
+    // Diagonal moves.
+    iterate_from(valid_moves, player, position, {1, 1});
+    iterate_from(valid_moves, player, position, {-1, -1});
+    iterate_from(valid_moves, player, position, {-1, 1});
+    iterate_from(valid_moves, player, position, {1, -1});
+
     return filter_moves(position, valid_moves, player, enforce_king_protection);
 }
 
