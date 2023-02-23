@@ -317,6 +317,10 @@ void GameState::advance_turn() {
             }
         }
 
+        auto king_position = m_board[m_king_positions[static_cast<int>(test_player)].x][m_king_positions[static_cast<int>(test_player)].y];
+        if (!king_position.color.has_value() || king_position.color.value() != test_player)
+            player_is_checkmated = true; // In truth, the king has been captured, but here it means the same thing.
+
         if (player_is_checkmated) {
             if (m_player == test_player) {
                 std::vector<FPC::Color>::size_type test_player_index = 0;
