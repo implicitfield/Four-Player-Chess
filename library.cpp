@@ -290,6 +290,7 @@ void GameState::advance_turn() {
         return std::nullopt;
     };
 
+    std::vector<Color> checkmated_players {};
     for (auto test_player : m_current_players) {
         bool player_is_checkmated = true;
 
@@ -333,9 +334,12 @@ void GameState::advance_turn() {
                 else
                     m_player = m_current_players[0];
             }
-            m_current_players.erase(std::remove(m_current_players.begin(), m_current_players.end(), test_player), m_current_players.end());
-            break;
+            checkmated_players.push_back(test_player);
         }
+    }
+    if (checkmated_players.size() > 0) {
+        for (auto player : checkmated_players)
+            m_current_players.erase(std::remove(m_current_players.begin(), m_current_players.end(), player), m_current_players.end());
     }
 }
 
