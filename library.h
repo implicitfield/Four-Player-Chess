@@ -69,6 +69,7 @@ public:
     Color get_current_player() const;
     const std::vector<Color>& get_current_players() const;
     bool player_exists(Color player) const;
+    std::pair<bool, Point> square_is_under_attack_for_player(Point position, Color player) const;
     std::vector<Point> get_valid_moves_for_position(Point position, Color player, bool enforce_king_protection) const;
     std::vector<Point> get_valid_moves_for_rook(Point position, Color player, bool enforce_king_protection) const;
     std::vector<Point> get_valid_moves_for_bishop(const Point position, Color player, bool enforce_king_protection) const;
@@ -78,7 +79,7 @@ public:
     std::vector<Point> get_valid_moves_for_pawn(Point position, Color player, bool enforce_king_protection) const;
 
 private:
-    std::pair<bool, Point> square_is_under_attack_for_player(Point position, Color player) const;
+    void complete_castling_if_needed(FPC::Point origin, FPC::Point destination);
     std::vector<Point> get_valid_moves_for_king_lite(Point position, Color player) const;
     std::vector<Point> filter_moves(const Point origin, std::vector<Point>& valid_moves, const Color player, bool enforce_king_protection) const;
     void unsafe_move_piece_to(const Point& origin, const Point& destination);
