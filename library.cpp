@@ -158,9 +158,7 @@ bool GameState::empty_square(const Point& square) {
 }
 
 bool GameState::may_promote(const Point& position, const Color& player) const {
-    const bool piece_has_value_and_is_a_pawn = (m_board[position.x][position.y].piece.has_value() && m_board[position.x][position.y].piece.value() == Piece::Pawn);
-    const bool color_has_value_and_is_owned_by_player = (m_board[position.x][position.y].color.has_value() && m_board[position.x][position.y].color.value() == player);
-    if (!is_valid_position(position) || !piece_has_value_and_is_a_pawn || !color_has_value_and_is_owned_by_player)
+    if (!is_valid_position(position) || !m_board[position.x][position.y].piece.has_value() || m_board[position.x][position.y].piece.value() != Piece::Pawn || !m_board[position.x][position.y].color.has_value() || m_board[position.x][position.y].color.value() != player)
         return false;
     switch (player) {
         case Color::Red:
