@@ -189,35 +189,7 @@ void GameState::unsafe_move_piece_to(const Point& origin, const Point& destinati
     empty_square(origin);
 }
 
-bool GameState::move_piece_to(const Point& origin, const Point& destination, bool enforce_king_protection) {
-    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin) || !is_valid_position(destination))
-        return false;
-    bool is_valid_move = false;
-    auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value(), enforce_king_protection);
-    for (auto move : valid_moves) {
-        if (move == destination)
-            is_valid_move = true;
-    }
-    if (!is_valid_move)
-        return false;
-    auto initial_origin_piece = m_board[origin.x][origin.y].piece;
-    auto initial_destination_piece = m_board[destination.x][destination.y].piece;
-    unsafe_move_piece_to(origin, destination);
-
-    if (m_board[destination.x][destination.y].piece == FPC::Piece::Pawn) {
-        if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 || std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
-            m_board[destination.x][destination.y].just_double_jumped = true;
-    }
-
-    // Check for "en passant"
-    if (initial_origin_piece.value() == FPC::Piece::Pawn && !initial_destination_piece.has_value()) {
-        if ((m_player == Color::Blue || m_player == Color::Green) && origin.y != destination.y)
-            empty_square({origin.x, destination.y});
-        else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x)
-            empty_square({destination.x, origin.y});
-    }
-
-    // Check for castling
+void GameState::complete_castling_if_needed(FPC::Point origin, FPC::Point destination) {
     if (m_board[destination.x][destination.y].piece == FPC::Piece::King && (std::abs(destination.x - origin.x) == 2 || std::abs(destination.y - origin.y) == 2)) {
         switch (m_player) {
             case Color::Red:
@@ -246,6 +218,37 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
                 break;
         }
     }
+}
+
+bool GameState::move_piece_to(const Point& origin, const Point& destination, bool enforce_king_protection) {
+    if (!m_board[origin.x][origin.y].piece.has_value() || !m_board[origin.x][origin.y].color.has_value() || !is_valid_position(origin) || !is_valid_position(destination))
+        return false;
+    bool is_valid_move = false;
+    auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value(), enforce_king_protection);
+    for (auto move : valid_moves) {
+        if (move == destination)
+            is_valid_move = true;
+    }
+    if (!is_valid_move)
+        return false;
+    auto initial_origin_piece = m_board[origin.x][origin.y].piece;
+    auto initial_destination_piece = m_board[destination.x][destination.y].piece;
+    unsafe_move_piece_to(origin, destination);
+
+    if (m_board[destination.x][destination.y].piece == FPC::Piece::Pawn) {
+        if (std::max(origin.x, destination.x) - std::min(origin.x, destination.x) == 2 || std::max(origin.y, destination.y) - std::min(origin.y, destination.y) == 2)
+            m_board[destination.x][destination.y].just_double_jumped = true;
+    }
+
+    // Check for "en passant"
+    if (initial_origin_piece.value() == FPC::Piece::Pawn && !initial_destination_piece.has_value()) {
+        if ((m_player == Color::Blue || m_player == Color::Green) && origin.y != destination.y)
+            empty_square({origin.x, destination.y});
+        else if ((m_player == Color::Red || m_player == Color::Yellow) && origin.x != destination.x)
+            empty_square({destination.x, origin.y});
+    }
+
+    complete_castling_if_needed(origin, destination);
 
     // Store positions of kings.
     if (m_board[destination.x][destination.y].piece == FPC::Piece::King)
@@ -515,10 +518,22 @@ std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color pla
                 }
             }
         }
-        if (!queenside_path_blocked)
-            valid_moves.push_back({position.x + axis_map.x, position.y + axis_map.y});
-        if (!kingside_path_blocked)
-            valid_moves.push_back({position.x - axis_map.x, position.y - axis_map.y});
+        if (!queenside_path_blocked) {
+            Point move = {position.x + axis_map.x, position.y + axis_map.y};
+            GameState test_board {*this};
+            test_board.unsafe_move_piece_to(position, move);
+            test_board.complete_castling_if_needed(position, move);
+            if (!test_board.square_is_under_attack_for_player(move, player).first)
+                valid_moves.push_back(move);
+        }
+        if (!kingside_path_blocked) {
+            Point move = {position.x - axis_map.x, position.y - axis_map.y};
+            GameState test_board {*this};
+            test_board.unsafe_move_piece_to(position, move);
+            test_board.complete_castling_if_needed(position, move);
+            if (!test_board.square_is_under_attack_for_player(move, player).first)
+                valid_moves.push_back(move);
+        }
     };
 
     // Castling
