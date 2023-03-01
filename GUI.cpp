@@ -1,22 +1,23 @@
 #include "GUI.h"
 #include <algorithm>
+#include <iostream>
 
 namespace GUI {
 
-Painter::Painter(FPC::GameState& board, SDL_Renderer* renderer)
+Painter::Painter(FPC::GameState& board, SDL_Window* window)
     : m_board(board)
-    , m_renderer(renderer) {
+    , m_window(window) {
+    m_screen_surface = SDL_GetWindowSurface(m_window);
+    if (!m_screen_surface) {
+        std::cout << "Screen surface could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
+        throw;
+    }
 }
 
 int get_cell_size() {
-    int width = window_width / 14 * 2;
-    int height = window_height / 14 * 2;
+    int width = window_width / 14;
+    int height = window_height / 14;
     return std::min(width, height);
-}
-
-static Color blend_color(Color first, Color second) {
-    constexpr int scale = 2;
-    return {(first.red + second.red) / scale, (first.green + second.green) / scale, (first.blue + second.blue) / scale};
 }
 
 PositionCache::PositionCache(FPC::Point position, FPC::Color player, const std::vector<FPC::Point>& cached_moves) {
@@ -37,49 +38,80 @@ const FPC::Color& PositionCache::get_cached_player() const {
     return m_player;
 }
 
-Color Painter::get_piece_color(int x, int y) {
-    if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value())
-        return {0xFF, 0xFF, 0xFF};
+SDL_Surface* Painter::get_piece_image(int x, int y) {
+    const auto cell_size = get_cell_size();
+    if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value()) {
+        return load_svg("shapes/grey_square.svg", cell_size, cell_size);
+    }
 
     if (!m_board.player_exists(m_board.get_board()[x][y].color.value()))
-        return {200, 200, 200};
+        return load_svg("shapes/rP.svg", cell_size, cell_size);
+    
+    std::string path = "shapes/";
 
-    Color additive_color {0xFF, 0xFF, 0xFF};
     switch (m_board.get_board()[x][y].color.value()) {
         case FPC::Color::Red:
-            additive_color.blue = 0x0;
-            additive_color.green = 0x0;
+            path.append("r");
             break;
         case FPC::Color::Blue:
-            additive_color.red = 0x0;
-            additive_color.green = 0x0;
+            path.append("b");
             break;
         case FPC::Color::Yellow:
-            additive_color.blue = 0x0;
+            path.append("y");
             break;
         case FPC::Color::Green:
-            additive_color.red = 0x0;
-            additive_color.blue = 0x0;
+            path.append("g");
             break;
     }
     switch (m_board.get_board()[x][y].piece.value()) {
         case FPC::Piece::Rook:
-            return blend_color({0xEF, 0x29, 0x29}, additive_color); // Red
+            path.append("R.svg");
+            break;
         case FPC::Piece::Bishop:
-            return blend_color({0x8A, 0xE2, 0x34}, additive_color); // Green
+            path.append("B.svg");
+            break;
         case FPC::Piece::King:
-            return blend_color({0xFC, 0xE9, 0x4F}, additive_color); // Yellow
+            path.append("K.svg");
+            break;
         case FPC::Piece::Queen:
-            return blend_color({0x72, 0x9F, 0xCF}, additive_color); // Blue
+            path.append("Q.svg");
+            break;
         case FPC::Piece::Knight:
-            return blend_color({0xAD, 0x7F, 0xA8}, additive_color); // Magenta
+            path.append("N.svg");
+            break;
         case FPC::Piece::Pawn:
-            return blend_color({0x34, 0xE2, 0xE2}, additive_color); // Cyan
+            path.append("P.svg");
+            break;
     };
+
+    return load_svg(path, cell_size, cell_size);
+}
+
+SDL_Surface* Painter::load_svg(std::string path, int width, int height) const {
+    SDL_RWops* file = SDL_RWFromFile(path.c_str(), "rb");
+    if (!file) {
+        std::cout << "Image file could not be opened!\nSDL_Error: " << IMG_GetError() << '\n';
+        return nullptr;
+    }
+
+    SDL_Surface* image = IMG_LoadSizedSVG_RW(file, width, height);
+    if (!image) {
+        std::cout << "Image could not be loaded!\nSDL_Error: " << IMG_GetError() << '\n';
+        return nullptr;
+    }
+    SDL_RWclose(file);
+
+    SDL_Surface* optimized_image = SDL_ConvertSurface(image, m_screen_surface->format, 0);
+    if (!optimized_image) {
+        std::cout << "Image could not be optimized!\nSDL_Error: " << SDL_GetError() << '\n';
+        return nullptr;
+    }
+    SDL_FreeSurface(image);
+    return optimized_image;
 }
 
 std::optional<FPC::Point> get_square_from_pixel(FPC::Point point) {
-    const auto cell_size = get_cell_size();
+    const auto cell_size = get_cell_size() * 2;
     const auto board_width = 14 * cell_size;
     const auto board_height = 14 * cell_size;
 
@@ -100,18 +132,13 @@ void Painter::draw_board() {
         for (int column = 0; column < 14; ++column) {
             if (!FPC::is_valid_position({row, column}))
                 continue;
-            int cell_x = row * cell_size + (window_width / 4) + 12;
-            int cell_y = column * cell_size + 12;
+            int cell_x = row * cell_size + (window_width / 8) + 6;
+            int cell_y = column * cell_size + 6;
 
             SDL_Rect cell_rect {cell_x, cell_y, cell_size, cell_size};
 
-            Color current_color = get_piece_color(row, column);
-            SDL_SetRenderDrawColor(m_renderer, current_color.red, current_color.green, current_color.blue, 255);
-            SDL_RenderFillRect(m_renderer, &cell_rect);
-            if (cell_size > 4) {
-                SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
-                SDL_RenderDrawRect(m_renderer, &cell_rect);
-            }
+            SDL_Surface* piece_image = get_piece_image(row, column);
+            SDL_BlitSurface(piece_image, nullptr, m_screen_surface, &cell_rect);
         }
     }
 }
@@ -128,11 +155,11 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
     if (points.empty())
         return false;
     for (auto point : points) {
-        SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
         int point_x = point.x * cell_size + (window_width / 4) + 12;
         int point_y = point.y * cell_size + 12;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
-        SDL_RenderFillRect(m_renderer, &point_rect);
+        SDL_Surface* grey_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
+        SDL_BlitSurface(m_screen_surface, nullptr, grey_square, &point_rect);
     }
     return true;
 }
@@ -167,9 +194,9 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
     }
     for (int i = 0; i < 4; ++i) {
         const FPC::Point screen_position {position.x * cell_size + (window_width / 4) + 12, position.y * cell_size + 12};
-        SDL_SetRenderDrawColor(m_renderer, 68, 68, 68, 255);
         SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
-        SDL_RenderFillRect(m_renderer, &point_rect);
+        SDL_Surface* grey_square = load_svg("shapes/grey_square.svg", cell_size, cell_size);
+        SDL_BlitSurface(m_screen_surface, nullptr, grey_square, &point_rect);
         promotion_selection[i] = point_rect;
         ++position.y;
     }

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "SDL.h"
+#include "SDL_image.h"
 #include "library.h"
 #include <array>
+#include <string>
 #include <optional>
 
 namespace GUI {
@@ -34,16 +36,18 @@ private:
 
 class Painter {
 public:
-    Painter(FPC::GameState& board, SDL_Renderer* renderer);
+    Painter(FPC::GameState& board, SDL_Window* window);
     void draw_board();
     void update(FPC::GameState& board);
     bool draw_valid_positions(FPC::Point position, FPC::Color player);
     std::array<SDL_Rect, 4> draw_promotion_dialog(FPC::Point position, FPC::Color player) const;
 
 private:
-    Color get_piece_color(int x, int y);
+    SDL_Surface* get_piece_image(int x, int y);
+    SDL_Surface* load_svg(std::string path, int width, int height) const;
     FPC::GameState& m_board;
-    SDL_Renderer* m_renderer;
+    SDL_Window* m_window;
+    SDL_Surface* m_screen_surface;
     std::optional<PositionCache> m_position_cache = std::nullopt;
 };
 

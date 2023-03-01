@@ -1,5 +1,6 @@
 #include "GUI.h"
 #include "SDL.h"
+#include "SDL_image.h"
 #include "library.h"
 #include <array>
 #include <iostream>
@@ -22,18 +23,10 @@ int main() {
         return 1;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-    if (!renderer) {
-        std::cout << "Renderer could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
     bool quit = false;
 
     FPC::GameState game;
-    GUI::Painter painter(game, renderer);
+    GUI::Painter painter(game, window);
     painter.draw_board();
 
     int pixel_width = 0;
@@ -99,8 +92,6 @@ int main() {
 
                 break;
         }
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_RenderClear(renderer);
         painter.draw_board();
         if (promotion_dialog_active)
             promotion_selection = painter.draw_promotion_dialog(square, game.get_current_player());
@@ -108,10 +99,9 @@ int main() {
             if (!painter.draw_valid_positions(square, game.get_current_player()))
                 draw_positions = false;
         }
-        SDL_RenderPresent(renderer);
+        SDL_UpdateWindowSurface(window);
     }
 
-    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
