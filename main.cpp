@@ -61,8 +61,8 @@ int main() {
                     if (promotion_dialog_active) {
                         update_square_value = false;
                         const int cell_size = GUI::get_cell_size();
-                        int cell_x = square_or_empty.value().x * cell_size + (GUI::window_width / 4) + 12;
-                        int cell_y = square_or_empty.value().y * cell_size + 12;
+                        int cell_x = square_or_empty.value().x * cell_size + (GUI::window_width / 8) + 6;
+                        int cell_y = square_or_empty.value().y * cell_size + 6;
                         SDL_Rect current_square {cell_x, cell_y, cell_size, cell_size};
                         auto is_equal = [](SDL_Rect first, SDL_Rect second) -> bool {
                             if (first.w == second.w && first.h == second.h && first.x == second.x && first.y == second.y)
