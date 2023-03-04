@@ -169,8 +169,8 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
         int point_x = point.x * cell_size + (window_width / 8) + 6;
         int point_y = point.y * cell_size + 6;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
-        SDL_Surface* grey_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
-        SDL_BlitSurface(grey_square, nullptr, m_screen_surface, &point_rect);
+        SDL_Surface* black_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
+        SDL_BlitSurface(black_square, nullptr, m_screen_surface, &point_rect);
     }
     return true;
 }
@@ -178,18 +178,22 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
 std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC::Color player) {
     std::array<SDL_Rect, 4> promotion_selection {};
     const int cell_size = get_cell_size();
+    std::string piece_image_path = "shapes/";
     switch (player) {
         case FPC::Color::Blue:
+            piece_image_path.append("b");
             --position.x;
             if (position.y > 7)
                 position.y = 7;
             break;
         case FPC::Color::Green:
+            piece_image_path.append("g");
             ++position.x;
             if (position.y > 7)
                 position.y = 7;
             break;
         case FPC::Color::Red:
+            piece_image_path.append("r");
             if (position.x == 3)
                 ++position.x;
             else
@@ -197,18 +201,35 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
             position.y = 0;
             break;
         case FPC::Color::Yellow:
+            piece_image_path.append("y");
             if (position.x == 10)
                 --position.x;
             else
                 ++position.x;
             position.y = 10;
     }
+    auto piece_char = [](FPC::Piece piece) -> std::string {
+        switch (piece) {
+            case FPC::Piece::Queen:
+                return "Q";
+            case FPC::Piece::Rook:
+                return "R";
+            case FPC::Piece::Bishop:
+                return "B";
+            case FPC::Piece::Knight:
+                return "N";
+            default:
+                throw;
+        }
+    };
     for (int i = 0; i < 4; ++i) {
         const FPC::Point screen_position {position.x * cell_size + (window_width / 8) + 6, position.y * cell_size + 6};
         SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
-        SDL_Surface* grey_square = load_svg("shapes/grey_square.svg", cell_size, cell_size);
-        SDL_BlitSurface(grey_square, nullptr, m_screen_surface, &point_rect);
         promotion_selection[i] = point_rect;
+        SDL_Surface* black_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
+        SDL_Surface* piece_image = load_svg(piece_image_path + piece_char(static_cast<FPC::Piece>(i)) + ".svg", cell_size, cell_size);
+        SDL_BlitSurface(black_square, nullptr, m_screen_surface, &point_rect);
+        SDL_BlitSurface(piece_image, nullptr, m_screen_surface, &point_rect);
         ++position.y;
     }
 
