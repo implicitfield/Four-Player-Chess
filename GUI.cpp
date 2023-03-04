@@ -40,29 +40,32 @@ const FPC::Color& PositionCache::get_cached_player() const {
 
 SDL_Surface* Painter::get_piece_image(int x, int y) {
     const auto cell_size = get_cell_size();
+    SDL_Surface* output = load_svg("shapes/grey_square.svg", cell_size, cell_size);
     if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value()) {
-        return load_svg("shapes/grey_square.svg", cell_size, cell_size);
+        return output;
     }
-
-    if (!m_board.player_exists(m_board.get_board()[x][y].color.value()))
-        return load_svg("shapes/rP.svg", cell_size, cell_size);
     
     std::string path = "shapes/";
 
-    switch (m_board.get_board()[x][y].color.value()) {
-        case FPC::Color::Red:
-            path.append("r");
-            break;
-        case FPC::Color::Blue:
-            path.append("b");
-            break;
-        case FPC::Color::Yellow:
-            path.append("y");
-            break;
-        case FPC::Color::Green:
-            path.append("g");
-            break;
+    if (!m_board.player_exists(m_board.get_board()[x][y].color.value())) {
+        path.append("grey");
+    } else {
+        switch (m_board.get_board()[x][y].color.value()) {
+            case FPC::Color::Red:
+                path.append("r");
+                break;
+            case FPC::Color::Blue:
+                path.append("b");
+                break;
+            case FPC::Color::Yellow:
+                path.append("y");
+                break;
+            case FPC::Color::Green:
+                path.append("g");
+                break;
+        }
     }
+
     switch (m_board.get_board()[x][y].piece.value()) {
         case FPC::Piece::Rook:
             path.append("R.svg");
@@ -84,7 +87,9 @@ SDL_Surface* Painter::get_piece_image(int x, int y) {
             break;
     };
 
-    return load_svg(path, cell_size, cell_size);
+    SDL_Surface* piece_image = load_svg(path, cell_size, cell_size);
+    SDL_BlitSurface(piece_image, nullptr, output, nullptr);
+    return output;
 }
 
 SDL_Surface* Painter::load_svg(std::string path, int width, int height) const {
