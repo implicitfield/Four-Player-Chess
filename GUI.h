@@ -6,6 +6,7 @@
 #include <array>
 #include <string>
 #include <optional>
+#include <unordered_map>
 
 namespace GUI {
 
@@ -40,15 +41,16 @@ public:
     void draw_board();
     void update(FPC::GameState& board);
     bool draw_valid_positions(FPC::Point position, FPC::Color player);
-    std::array<SDL_Rect, 4> draw_promotion_dialog(FPC::Point position, FPC::Color player) const;
+    std::array<SDL_Rect, 4> draw_promotion_dialog(FPC::Point position, FPC::Color player);
 
 private:
-    SDL_Surface* get_piece_image(int x, int y);
-    SDL_Surface* load_svg(std::string path, int width, int height) const;
+    std::string get_path_to_piece_image(int x, int y);
+    SDL_Surface* load_svg(std::string path, int width, int height);
     FPC::GameState& m_board;
     SDL_Window* m_window;
     SDL_Surface* m_screen_surface;
     std::optional<PositionCache> m_position_cache = std::nullopt;
+    std::unordered_map<std::string, SDL_Surface*> m_image_cache;
 };
 
 }
