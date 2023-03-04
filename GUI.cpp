@@ -1,5 +1,6 @@
 #include "GUI.h"
 #include <algorithm>
+#include <exception>
 #include <iostream>
 
 namespace GUI {
@@ -10,7 +11,7 @@ Painter::Painter(FPC::GameState& board, SDL_Window* window)
     m_screen_surface = SDL_GetWindowSurface(m_window);
     if (!m_screen_surface) {
         std::cout << "Screen surface could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
-        throw;
+        std::terminate();
     }
 }
 
@@ -218,7 +219,7 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
             case FPC::Piece::Knight:
                 return "N";
             default:
-                throw;
+                std::terminate();
         }
     };
     for (int i = 0; i < 4; ++i) {
