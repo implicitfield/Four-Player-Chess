@@ -38,11 +38,9 @@ const FPC::Color& PositionCache::get_cached_player() const {
     return m_player;
 }
 
-SDL_Surface* Painter::get_piece_image(int x, int y) {
-    const auto cell_size = get_cell_size();
-    SDL_Surface* output = load_svg("shapes/grey_square.svg", cell_size, cell_size);
+std::string Painter::get_path_to_piece_image(int x, int y) {
     if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value()) {
-        return output;
+        return "shapes/grey_square.svg";
     }
     
     std::string path = "shapes/";
@@ -87,12 +85,15 @@ SDL_Surface* Painter::get_piece_image(int x, int y) {
             break;
     };
 
-    SDL_Surface* piece_image = load_svg(path, cell_size, cell_size);
-    SDL_BlitSurface(piece_image, nullptr, output, nullptr);
-    return output;
+    return path;
 }
 
-SDL_Surface* Painter::load_svg(std::string path, int width, int height) const {
+SDL_Surface* Painter::load_svg(std::string path, int width, int height) {
+    for (auto [cached_path, cached_surface] : m_image_cache) {
+        if (cached_path == path)
+            return cached_surface;
+    }
+
     SDL_RWops* file = SDL_RWFromFile(path.c_str(), "rb");
     if (!file) {
         std::cout << "Image file could not be opened!\nSDL_Error: " << IMG_GetError() << '\n';
@@ -112,6 +113,7 @@ SDL_Surface* Painter::load_svg(std::string path, int width, int height) const {
         return nullptr;
     }
     SDL_FreeSurface(image);
+    m_image_cache[path] = optimized_image;
     return optimized_image;
 }
 
@@ -132,7 +134,8 @@ std::optional<FPC::Point> get_square_from_pixel(FPC::Point point) {
 }
 
 void Painter::draw_board() {
-    int cell_size = get_cell_size();
+    const int cell_size = get_cell_size();
+    SDL_FillRect(m_screen_surface, nullptr, SDL_MapRGB(m_screen_surface->format, 255, 255, 255));
     for (int row = 0; row < 14; ++row) {
         for (int column = 0; column < 14; ++column) {
             if (!FPC::is_valid_position({row, column}))
@@ -142,8 +145,11 @@ void Painter::draw_board() {
 
             SDL_Rect cell_rect {cell_x, cell_y, cell_size, cell_size};
 
-            SDL_Surface* piece_image = get_piece_image(row, column);
-            SDL_BlitSurface(piece_image, nullptr, m_screen_surface, &cell_rect);
+            std::string piece_image_path = get_path_to_piece_image(row, column);
+
+            SDL_BlitSurface(load_svg("shapes/grey_square.svg", cell_size, cell_size), nullptr, m_screen_surface, &cell_rect);
+            if (piece_image_path != "shapes/grey_square.svg")
+                SDL_BlitSurface(load_svg(piece_image_path, cell_size, cell_size), nullptr, m_screen_surface, &cell_rect);
         }
     }
 }
@@ -160,16 +166,16 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
     if (points.empty())
         return false;
     for (auto point : points) {
-        int point_x = point.x * cell_size + (window_width / 4) + 12;
-        int point_y = point.y * cell_size + 12;
+        int point_x = point.x * cell_size + (window_width / 8) + 6;
+        int point_y = point.y * cell_size + 6;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
         SDL_Surface* grey_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
-        SDL_BlitSurface(m_screen_surface, nullptr, grey_square, &point_rect);
+        SDL_BlitSurface(grey_square, nullptr, m_screen_surface, &point_rect);
     }
     return true;
 }
 
-std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC::Color player) const {
+std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC::Color player) {
     std::array<SDL_Rect, 4> promotion_selection {};
     const int cell_size = get_cell_size();
     switch (player) {
@@ -198,10 +204,10 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
             position.y = 10;
     }
     for (int i = 0; i < 4; ++i) {
-        const FPC::Point screen_position {position.x * cell_size + (window_width / 4) + 12, position.y * cell_size + 12};
+        const FPC::Point screen_position {position.x * cell_size + (window_width / 8) + 6, position.y * cell_size + 6};
         SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
         SDL_Surface* grey_square = load_svg("shapes/grey_square.svg", cell_size, cell_size);
-        SDL_BlitSurface(m_screen_surface, nullptr, grey_square, &point_rect);
+        SDL_BlitSurface(grey_square, nullptr, m_screen_surface, &point_rect);
         promotion_selection[i] = point_rect;
         ++position.y;
     }
