@@ -42,7 +42,7 @@ std::string Painter::get_path_to_piece_image(int x, int y) {
     if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value()) {
         return "shapes/grey_square.svg";
     }
-    
+
     std::string path = "shapes/";
 
     if (!m_board.player_exists(m_board.get_board()[x][y].color.value())) {

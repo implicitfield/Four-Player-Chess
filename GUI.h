@@ -4,8 +4,8 @@
 #include "SDL_image.h"
 #include "library.h"
 #include <array>
-#include <string>
 #include <optional>
+#include <string>
 #include <unordered_map>
 
 namespace GUI {
