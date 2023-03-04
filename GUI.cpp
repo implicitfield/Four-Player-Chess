@@ -39,11 +39,10 @@ const FPC::Color& PositionCache::get_cached_player() const {
 }
 
 std::string Painter::get_path_to_piece_image(int x, int y) {
-    if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value()) {
-        return "shapes/grey_square.svg";
-    }
+    if (!m_board.get_board()[x][y].piece.has_value() || !m_board.get_board()[x][y].color.has_value())
+        return "assets/grey_square.svg";
 
-    std::string path = "shapes/";
+    std::string path = "assets/shapes/";
 
     if (!m_board.player_exists(m_board.get_board()[x][y].color.value())) {
         path.append("grey");
@@ -147,8 +146,8 @@ void Painter::draw_board() {
 
             std::string piece_image_path = get_path_to_piece_image(row, column);
 
-            SDL_BlitSurface(load_svg("shapes/grey_square.svg", cell_size, cell_size), nullptr, m_screen_surface, &cell_rect);
-            if (piece_image_path != "shapes/grey_square.svg")
+            SDL_BlitSurface(load_svg("assets/grey_square.svg", cell_size, cell_size), nullptr, m_screen_surface, &cell_rect);
+            if (piece_image_path != "assets/grey_square.svg")
                 SDL_BlitSurface(load_svg(piece_image_path, cell_size, cell_size), nullptr, m_screen_surface, &cell_rect);
         }
     }
@@ -169,7 +168,7 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
         int point_x = point.x * cell_size + (window_width / 8) + 6;
         int point_y = point.y * cell_size + 6;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
-        SDL_Surface* black_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
+        SDL_Surface* black_square = load_svg("assets/black_square.svg", cell_size, cell_size);
         SDL_BlitSurface(black_square, nullptr, m_screen_surface, &point_rect);
     }
     return true;
@@ -178,7 +177,7 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
 std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC::Color player) {
     std::array<SDL_Rect, 4> promotion_selection {};
     const int cell_size = get_cell_size();
-    std::string piece_image_path = "shapes/";
+    std::string piece_image_path = "assets/shapes/";
     switch (player) {
         case FPC::Color::Blue:
             piece_image_path.append("b");
@@ -226,7 +225,7 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
         const FPC::Point screen_position {position.x * cell_size + (window_width / 8) + 6, position.y * cell_size + 6};
         SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
         promotion_selection[i] = point_rect;
-        SDL_Surface* black_square = load_svg("shapes/black_square.svg", cell_size, cell_size);
+        SDL_Surface* black_square = load_svg("assets/black_square.svg", cell_size, cell_size);
         SDL_Surface* piece_image = load_svg(piece_image_path + piece_char(static_cast<FPC::Piece>(i)) + ".svg", cell_size, cell_size);
         SDL_BlitSurface(black_square, nullptr, m_screen_surface, &point_rect);
         SDL_BlitSurface(piece_image, nullptr, m_screen_surface, &point_rect);
