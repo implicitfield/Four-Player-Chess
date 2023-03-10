@@ -19,7 +19,7 @@ struct Color {
     int blue;
 };
 
-std::optional<FPC::Point> get_square_from_pixel(FPC::Point point);
+std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale);
 int get_cell_size();
 
 class PositionCache {
