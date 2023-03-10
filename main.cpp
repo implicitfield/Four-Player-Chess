@@ -51,7 +51,9 @@ int main() {
                     // internal coordinates used by SDL, so we use scaled coordinates to interface with the library.
                     int x_scaled = event.motion.x * (pixel_width / GUI::window_width);
                     int y_scaled = event.motion.y * (pixel_height / GUI::window_height);
-                    auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled});
+                    if (pixel_width / GUI::window_width != pixel_height / GUI::window_height)
+                        std::terminate();
+                    auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled}, pixel_width / GUI::window_width);
 
                     if (!square_or_empty.has_value() || (!draw_positions && !game.point_is_of_color(square_or_empty.value(), game.get_current_player()) && !promotion_dialog_active)) {
                         draw_positions = false;
