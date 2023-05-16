@@ -107,14 +107,8 @@ SDL_Surface* Painter::load_svg(std::string path, int width, int height) {
     }
     SDL_RWclose(file);
 
-    SDL_Surface* optimized_image = SDL_ConvertSurface(image, m_screen_surface->format, 0);
-    if (!optimized_image) {
-        std::cout << "Image could not be optimized!\nSDL_Error: " << SDL_GetError() << '\n';
-        return nullptr;
-    }
-    SDL_FreeSurface(image);
-    m_image_cache[path] = optimized_image;
-    return optimized_image;
+    m_image_cache[path] = image;
+    return image;
 }
 
 std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale) {
