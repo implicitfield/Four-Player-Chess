@@ -89,7 +89,7 @@ std::string Painter::get_path_to_piece_image(int x, int y) {
 }
 
 SDL_Surface* Painter::load_svg(std::string path, int width, int height) {
-    for (auto [cached_path, cached_surface] : m_image_cache) {
+    for (const auto& [cached_path, cached_surface] : m_image_cache) {
         if (cached_path == path)
             return cached_surface;
     }
@@ -159,7 +159,7 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
     int cell_size = get_cell_size();
     if (points.empty())
         return false;
-    for (auto point : points) {
+    for (const auto& point : points) {
         int point_x = point.x * cell_size + (window_width / 8) + 6;
         int point_y = point.y * cell_size + 6;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};

@@ -98,7 +98,7 @@ std::array<std::array<Square, 14>, 14>& GameState::get_board() {
     return m_board;
 }
 
-bool GameState::point_is_of_color(Point point, Color color) const {
+bool GameState::point_is_of_color(const Point& point, const Color color) const {
     if (!m_board[point.x][point.y].color.has_value())
         return false;
     return m_board[point.x][point.y].color.value() == color;
@@ -131,7 +131,7 @@ void get_piece_name(const GameState& game, int x, int y) {
     }
 }
 
-void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player, const Point original_position, const Point increment_map) const {
+void GameState::iterate_from(std::vector<Point>& valid_moves, const Color player, const Point& original_position, const Point& increment_map) const {
     int x = original_position.x;
     int y = original_position.y;
     while (is_valid_position({x += increment_map.x, y += increment_map.y})) {
@@ -223,7 +223,7 @@ bool GameState::move_piece_to(const Point& origin, const Point& destination, boo
         return false;
     bool is_valid_move = false;
     auto valid_moves = get_valid_moves_for_position(origin, m_board[origin.x][origin.y].color.value(), enforce_king_protection);
-    for (auto move : valid_moves) {
+    for (const auto& move : valid_moves) {
         if (move == destination)
             is_valid_move = true;
     }
@@ -292,7 +292,7 @@ void GameState::advance_turn() {
     };
 
     std::vector<Color> checkmated_players {};
-    for (auto test_player : m_current_players) {
+    for (const auto& test_player : m_current_players) {
         bool player_is_checkmated = true;
 
         for (int x = 3; x < 11; ++x) {
@@ -339,7 +339,7 @@ void GameState::advance_turn() {
         }
     }
     if (checkmated_players.size() > 0) {
-        for (auto player : checkmated_players)
+        for (const auto& player : checkmated_players)
             m_current_players.erase(std::remove(m_current_players.begin(), m_current_players.end(), player), m_current_players.end());
     }
 }
@@ -362,7 +362,7 @@ std::vector<Point> GameState::filter_moves(const Point origin, std::vector<Point
     auto piece_attacking_king = square_is_under_attack_for_player(m_king_positions[static_cast<int>(player)], player);
     if (piece_attacking_king.first) {
         std::vector<Point> king_protection_moves;
-        for (auto move : valid_moves) {
+        for (const auto& move : valid_moves) {
             GameState test_board {*this};
             test_board.unsafe_move_piece_to(origin, move);
             if (!test_board.square_is_under_attack_for_player(test_board.m_king_positions[static_cast<int>(player)], player).first)
@@ -436,7 +436,7 @@ std::pair<bool, Point> GameState::square_is_under_attack_for_player(Point positi
         auto moves = get_valid_moves_for_king_lite(iterate_position, m_board[iterate_position.x][iterate_position.y].color.value());
         if (m_board[iterate_position.x][iterate_position.y].piece.value() != Piece::King)
             moves = get_valid_moves_for_position(iterate_position, m_board[iterate_position.x][iterate_position.y].color.value(), false);
-        for (auto move : moves) {
+        for (const auto& move : moves) {
             if (move == position) {
                 attack_board[move.x][move.y].first = true;
                 attack_board[move.x][move.y].second = {iterate_position.x, iterate_position.y};
@@ -475,7 +475,7 @@ std::vector<Point> GameState::get_valid_moves_for_king_lite(Point position, Colo
 
 std::vector<Point> GameState::get_valid_moves_for_king(Point position, Color player) const {
     std::vector<Point> valid_moves {};
-    for (auto move : get_valid_moves_for_king_lite(position, player)) {
+    for (const auto& move : get_valid_moves_for_king_lite(position, player)) {
         GameState test_board {*this};
         test_board.m_board[move.x][move.y].piece = Piece::King;
         test_board.m_board[move.x][move.y].color = player;
