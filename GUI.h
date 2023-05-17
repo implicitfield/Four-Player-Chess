@@ -10,17 +10,11 @@
 
 namespace GUI {
 
-constexpr int window_width = 1024;
-constexpr int window_height = 768;
-
 struct Color {
     int red;
     int green;
     int blue;
 };
-
-std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale);
-int get_cell_size();
 
 class PositionCache {
 public:
@@ -37,11 +31,17 @@ private:
 
 class Painter {
 public:
-    Painter(FPC::GameState& board, SDL_Window* window);
+    Painter(FPC::GameState& board, SDL_Window* window, int window_height, int window_width);
     void draw_board();
     void update(FPC::GameState& board);
     bool draw_valid_positions(FPC::Point position, FPC::Color player);
     std::array<SDL_Rect, 4> draw_promotion_dialog(FPC::Point position, FPC::Color player);
+    void refresh_surface();
+    int get_window_width() { return m_window_width; };
+    int get_window_height() { return m_window_height; };
+    void update_window_size(int width, int height);
+    int get_cell_size();
+    std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale);
 
 private:
     std::string get_path_to_piece_image(int x, int y);
@@ -51,6 +51,9 @@ private:
     SDL_Surface* m_screen_surface;
     std::optional<PositionCache> m_position_cache = std::nullopt;
     std::unordered_map<std::string, SDL_Surface*> m_image_cache;
+    int m_window_height;
+    int m_window_width;
+
 };
 
 }

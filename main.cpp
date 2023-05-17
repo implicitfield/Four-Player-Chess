@@ -14,8 +14,8 @@ int main() {
     SDL_Window* window = SDL_CreateWindow("FPC",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        GUI::window_width, GUI::window_height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+        1024, 768,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
 
     if (!window) {
         std::cout << "Window could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
@@ -26,7 +26,7 @@ int main() {
     bool quit = false;
 
     FPC::GameState game;
-    GUI::Painter painter(game, window);
+    GUI::Painter painter(game, window, 768, 1024);
     painter.draw_board();
 
     int pixel_width = 0;
@@ -44,16 +44,26 @@ int main() {
             case SDL_QUIT:
                 quit = true;
                 break;
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                    painter.refresh_surface();
+		    int height = 0;
+		    int width = 0;
+		    SDL_GetWindowSize(window, &width, &height);
+                    SDL_GL_GetDrawableSize(window, &pixel_width, &pixel_height);
+		    painter.update_window_size(height, width);
+                }
+                break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.motion.state & SDL_BUTTON_LMASK) {
                     bool update_square_value = true;
                     // On macOS with retina displays, the position returned from event.motion.* differs from the
                     // internal coordinates used by SDL, so we use scaled coordinates to interface with the library.
-                    int x_scaled = event.motion.x * (pixel_width / GUI::window_width);
-                    int y_scaled = event.motion.y * (pixel_height / GUI::window_height);
-                    if (pixel_width / GUI::window_width != pixel_height / GUI::window_height)
+                    int x_scaled = event.motion.x * (pixel_width / painter.get_window_width());
+                    int y_scaled = event.motion.y * (pixel_height / painter.get_window_height());
+                    if (pixel_width / painter.get_window_width() != pixel_height / painter.get_window_height())
                         std::terminate();
-                    auto square_or_empty = GUI::get_square_from_pixel({x_scaled, y_scaled}, pixel_width / GUI::window_width);
+                    auto square_or_empty = painter.get_square_from_pixel({x_scaled, y_scaled}, pixel_width / painter.get_window_width());
 
                     if (!square_or_empty.has_value() || (!draw_positions && !game.point_is_of_color(square_or_empty.value(), game.get_current_player()) && !promotion_dialog_active)) {
                         draw_positions = false;
@@ -62,9 +72,9 @@ int main() {
 
                     if (promotion_dialog_active) {
                         update_square_value = false;
-                        const int cell_size = GUI::get_cell_size();
-                        int cell_x = square_or_empty.value().x * cell_size + (GUI::window_width - 14 * cell_size) / 2;
-                        int cell_y = square_or_empty.value().y * cell_size + (GUI::window_height - 14 * cell_size) / 2;
+                        const int cell_size = painter.get_cell_size();
+                        int cell_x = square_or_empty.value().x * cell_size + (painter.get_window_width() - 14 * cell_size) / 2;
+                        int cell_y = square_or_empty.value().y * cell_size + (painter.get_window_height() - 14 * cell_size) / 2;
                         SDL_Rect current_square {cell_x, cell_y, cell_size, cell_size};
                         auto is_equal = [](SDL_Rect first, SDL_Rect second) -> bool {
                             if (first.w == second.w && first.h == second.h && first.x == second.x && first.y == second.y)

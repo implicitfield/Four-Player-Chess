@@ -5,9 +5,11 @@
 
 namespace GUI {
 
-Painter::Painter(FPC::GameState& board, SDL_Window* window)
+Painter::Painter(FPC::GameState& board, SDL_Window* window, int window_height, int window_width)
     : m_board(board)
-    , m_window(window) {
+    , m_window(window)
+    , m_window_height(window_height)
+    , m_window_width(window_width) {
     m_screen_surface = SDL_GetWindowSurface(m_window);
     if (!m_screen_surface) {
         std::cout << "Screen surface could not be created!\nSDL_Error: " << SDL_GetError() << '\n';
@@ -15,10 +17,8 @@ Painter::Painter(FPC::GameState& board, SDL_Window* window)
     }
 }
 
-int get_cell_size() {
-    int width = window_width / 14;
-    int height = window_height / 14;
-    return std::min(width, height);
+int Painter::get_cell_size() {
+    return std::min(m_window_width / 14, m_window_height / 14);
 }
 
 PositionCache::PositionCache(FPC::Point position, FPC::Color player, const std::vector<FPC::Point>& cached_moves) {
@@ -111,16 +111,16 @@ SDL_Surface* Painter::load_svg(std::string path, int width, int height) {
     return image;
 }
 
-std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale) {
+std::optional<FPC::Point> Painter::get_square_from_pixel(FPC::Point point, int scale) {
     const auto cell_size = get_cell_size() * scale;
     const auto board_width = 14 * cell_size;
     const auto board_height = 14 * cell_size;
 
-    if (point.x <= (window_width - board_width) / 2 || point.x >= (window_width - board_width) / 2 + board_width)
+    if (point.x <= (m_window_width - board_width) / 2 || point.x >= (m_window_width - board_width) / 2 + board_width)
         return std::nullopt;
-    if (point.y <= (window_height - board_height) / 2 || point.y >= (window_height - board_height) / 2 + board_height)
+    if (point.y <= (m_window_height - board_height) / 2 || point.y >= (m_window_height - board_height) / 2 + board_height)
         return std::nullopt;
-    auto output = FPC::Point {(point.x - (window_width - (14 / scale) * cell_size) / (2 * scale)) / cell_size, (point.y - (window_height - (14 / scale) * cell_size) / (2 * scale)) / cell_size};
+    auto output = FPC::Point {(point.x - (m_window_width - (14 / scale) * cell_size) / (2 * scale)) / cell_size, (point.y - (m_window_height - (14 / scale) * cell_size) / (2 * scale)) / cell_size};
     // Filter out positions outside of the board.
     if (!FPC::is_valid_position(output))
         return std::nullopt;
@@ -134,8 +134,8 @@ void Painter::draw_board() {
         for (int column = 0; column < 14; ++column) {
             if (!FPC::is_valid_position({row, column}))
                 continue;
-            int cell_x = row * cell_size + (window_width - 14 * cell_size) / 2;
-            int cell_y = column * cell_size + (window_height - 14 * cell_size) / 2;
+            int cell_x = row * cell_size + (m_window_width - 14 * cell_size) / 2;
+            int cell_y = column * cell_size + (m_window_height - 14 * cell_size) / 2;
 
             SDL_Rect cell_rect {cell_x, cell_y, cell_size, cell_size};
 
@@ -160,8 +160,8 @@ bool Painter::draw_valid_positions(FPC::Point position, FPC::Color player) {
     if (points.empty())
         return false;
     for (const auto& point : points) {
-        int point_x = point.x * cell_size + (window_width - 14 * cell_size) / 2;
-        int point_y = point.y * cell_size + (window_height - 14 * cell_size) / 2;
+        int point_x = point.x * cell_size + (m_window_width - 14 * cell_size) / 2;
+        int point_y = point.y * cell_size + (m_window_height - 14 * cell_size) / 2;
         SDL_Rect point_rect {point_x, point_y, cell_size, cell_size};
         SDL_Surface* black_square = load_svg("assets/black_square.svg", cell_size, cell_size);
         SDL_BlitSurface(black_square, nullptr, m_screen_surface, &point_rect);
@@ -217,7 +217,7 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
         }
     };
     for (int i = 0; i < 4; ++i) {
-        const FPC::Point screen_position {position.x * cell_size + (window_width - 14 * cell_size) / 2, position.y * cell_size + (window_height - 14 * cell_size) / 2};
+        const FPC::Point screen_position {position.x * cell_size + (m_window_width - 14 * cell_size) / 2, position.y * cell_size + (m_window_height - 14 * cell_size) / 2};
         SDL_Rect point_rect {screen_position.x, screen_position.y, cell_size, cell_size};
         promotion_selection[i] = point_rect;
         SDL_Surface* black_square = load_svg("assets/black_square.svg", cell_size, cell_size);
@@ -230,8 +230,20 @@ std::array<SDL_Rect, 4> Painter::draw_promotion_dialog(FPC::Point position, FPC:
     return promotion_selection;
 }
 
+void Painter::update_window_size(int height, int width) {
+    if (height <= 0 || width <= 0)
+        return;
+    m_image_cache = {};
+    m_window_height = height;
+    m_window_width = width;
+}
+
 void Painter::update(FPC::GameState& board) {
     m_board = board;
+}
+
+void Painter::refresh_surface() {
+    m_screen_surface = SDL_GetWindowSurface(m_window);
 }
 
 }
