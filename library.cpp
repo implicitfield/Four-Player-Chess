@@ -177,6 +177,8 @@ bool GameState::may_promote(const Point& position, const Color& player) const {
             if (position.x == 0)
                 return true;
             return false;
+        default:
+            __builtin_unreachable();
     }
 }
 
@@ -397,6 +399,8 @@ std::vector<Point> GameState::get_valid_moves_for_position(Point position, Color
             return get_valid_moves_for_knight(position, player, enforce_king_protection);
         case Piece::Pawn:
             return get_valid_moves_for_pawn(position, player, enforce_king_protection);
+        default:
+            __builtin_unreachable();
     }
 }
 
