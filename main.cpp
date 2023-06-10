@@ -5,6 +5,20 @@
 #include <array>
 #include <iostream>
 
+static int resizingEventWatcher(void* data, SDL_Event* event) {
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        GUI::Painter* painter = reinterpret_cast<GUI::Painter*>(data);
+        painter->refresh_surface();
+        int height = 0;
+        int width = 0;
+        SDL_GetWindowSize(SDL_GetWindowFromID(event->window.windowID), &width, &height);
+        painter->update_window_size(height, width);
+        painter->draw_board();
+        SDL_UpdateWindowSurface(SDL_GetWindowFromID(event->window.windowID));
+    }
+    return 0;
+}
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not be initialized!\nSDL_Error: " << SDL_GetError() << '\n';
@@ -27,6 +41,7 @@ int main() {
 
     FPC::GameState game;
     GUI::Painter painter(game, window, 768, 1024);
+    SDL_AddEventWatch(resizingEventWatcher, &painter);
     painter.draw_board();
 
     int pixel_width = 0;
@@ -43,16 +58,6 @@ int main() {
         switch (event.type) {
             case SDL_QUIT:
                 quit = true;
-                break;
-            case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-                    painter.refresh_surface();
-		    int height = 0;
-		    int width = 0;
-		    SDL_GetWindowSize(window, &width, &height);
-                    SDL_GL_GetDrawableSize(window, &pixel_width, &pixel_height);
-		    painter.update_window_size(height, width);
-                }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.motion.state & SDL_BUTTON_LMASK) {
