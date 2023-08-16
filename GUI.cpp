@@ -111,16 +111,10 @@ SDL_Surface* Painter::load_svg(std::string path, int width, int height) {
     return image;
 }
 
-std::optional<FPC::Point> Painter::get_square_from_pixel(FPC::Point point, int scale) {
-    const auto cell_size = get_cell_size() * scale;
-    const auto board_width = 14 * cell_size;
-    const auto board_height = 14 * cell_size;
+std::optional<FPC::Point> Painter::get_square_from_pixel(FPC::Point point) {
+    const auto cell_size = get_cell_size();
 
-    if (point.x <= (m_window_width - board_width) / 2 || point.x >= (m_window_width - board_width) / 2 + board_width)
-        return std::nullopt;
-    if (point.y <= (m_window_height - board_height) / 2 || point.y >= (m_window_height - board_height) / 2 + board_height)
-        return std::nullopt;
-    auto output = FPC::Point {(point.x - (m_window_width - (14 / scale) * cell_size) / (2 * scale)) / cell_size, (point.y - (m_window_height - (14 / scale) * cell_size) / (2 * scale)) / cell_size};
+    const auto output = FPC::Point {(point.x - (m_window_width - 14 * cell_size) / 2) / cell_size, (point.y - (m_window_height - 14 * cell_size) / 2) / cell_size};
     // Filter out positions outside of the board.
     if (!FPC::is_valid_position(output))
         return std::nullopt;

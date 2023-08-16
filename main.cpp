@@ -44,9 +44,6 @@ int main() {
     SDL_AddEventWatch(resizingEventWatcher, &painter);
     painter.draw_board();
 
-    int pixel_width = 0;
-    int pixel_height = 0;
-    SDL_GL_GetDrawableSize(window, &pixel_width, &pixel_height);
     bool draw_positions = false;
     bool promotion_dialog_active = false;
     FPC::Point square {};
@@ -62,13 +59,7 @@ int main() {
             case SDL_MOUSEBUTTONDOWN:
                 if (event.motion.state & SDL_BUTTON_LMASK) {
                     bool update_square_value = true;
-                    // On macOS with retina displays, the position returned from event.motion.* differs from the
-                    // internal coordinates used by SDL, so we use scaled coordinates to interface with the library.
-                    int x_scaled = event.motion.x * (pixel_width / painter.get_window_width());
-                    int y_scaled = event.motion.y * (pixel_height / painter.get_window_height());
-                    if (pixel_width / painter.get_window_width() != pixel_height / painter.get_window_height())
-                        std::terminate();
-                    auto square_or_empty = painter.get_square_from_pixel({x_scaled, y_scaled}, pixel_width / painter.get_window_width());
+                    auto square_or_empty = painter.get_square_from_pixel({event.motion.x, event.motion.y});
 
                     if (!square_or_empty.has_value() || (!draw_positions && !game.point_is_of_color(square_or_empty.value(), game.get_current_player()) && !promotion_dialog_active)) {
                         draw_positions = false;

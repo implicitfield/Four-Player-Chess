@@ -41,7 +41,7 @@ public:
     int get_window_height() { return m_window_height; };
     void update_window_size(int width, int height);
     int get_cell_size();
-    std::optional<FPC::Point> get_square_from_pixel(FPC::Point point, int scale);
+    std::optional<FPC::Point> get_square_from_pixel(FPC::Point point);
 
 private:
     std::string get_path_to_piece_image(int x, int y);
