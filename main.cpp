@@ -13,6 +13,12 @@ static int resizingEventWatcher(void* data, SDL_Event* event) {
         SDL_GetWindowSize(SDL_GetWindowFromID(event->window.windowID), &width, &height);
         interface_state->painter->update_window_size(height, width);
         interface_state->painter->draw_board();
+        if (interface_state->promotion_dialog_active)
+            interface_state->promotion_selection = interface_state->painter->draw_promotion_dialog(interface_state->square, interface_state->game->get_current_player());
+        if (interface_state->draw_positions) {
+            if (!interface_state->painter->draw_valid_positions(interface_state->square, interface_state->game->get_current_player()))
+                interface_state->draw_positions = false;
+        }
         SDL_UpdateWindowSurface(SDL_GetWindowFromID(event->window.windowID));
     }
     return 0;
