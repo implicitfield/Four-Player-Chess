@@ -2,18 +2,17 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "library.h"
-#include <array>
 #include <iostream>
 
 static int resizingEventWatcher(void* data, SDL_Event* event) {
     if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        GUI::Painter* painter = reinterpret_cast<GUI::Painter*>(data);
-        painter->refresh_surface();
+        GUI::GUIState* interface_state = reinterpret_cast<GUI::GUIState*>(data);
+        interface_state->painter->refresh_surface();
         int height = 0;
         int width = 0;
         SDL_GetWindowSize(SDL_GetWindowFromID(event->window.windowID), &width, &height);
-        painter->update_window_size(height, width);
-        painter->draw_board();
+        interface_state->painter->update_window_size(height, width);
+        interface_state->painter->draw_board();
         SDL_UpdateWindowSurface(SDL_GetWindowFromID(event->window.windowID));
     }
     return 0;
@@ -41,13 +40,9 @@ int main() {
 
     FPC::GameState game;
     GUI::Painter painter(game, window, 768, 1024);
-    SDL_AddEventWatch(resizingEventWatcher, &painter);
+    GUI::GUIState interface_state {&painter, &game};
+    SDL_AddEventWatch(resizingEventWatcher, &interface_state);
     painter.draw_board();
-
-    bool draw_positions = false;
-    bool promotion_dialog_active = false;
-    FPC::Point square {};
-    std::array<SDL_Rect, 4> promotion_selection {};
 
     while (!quit) {
         SDL_Event event;
@@ -61,12 +56,12 @@ int main() {
                     bool update_square_value = true;
                     auto square_or_empty = painter.get_square_from_pixel({event.motion.x, event.motion.y});
 
-                    if (!square_or_empty.has_value() || (!draw_positions && !game.point_is_of_color(square_or_empty.value(), game.get_current_player()) && !promotion_dialog_active)) {
-                        draw_positions = false;
+                    if (!square_or_empty.has_value() || (!interface_state.draw_positions && !interface_state.game->point_is_of_color(square_or_empty.value(), interface_state.game->get_current_player()) && !interface_state.promotion_dialog_active)) {
+                        interface_state.draw_positions = false;
                         break;
                     }
 
-                    if (promotion_dialog_active) {
+                    if (interface_state.promotion_dialog_active) {
                         update_square_value = false;
                         const int cell_size = painter.get_cell_size();
                         int cell_x = square_or_empty.value().x * cell_size + (painter.get_window_width() - 14 * cell_size) / 2;
@@ -78,34 +73,35 @@ int main() {
                             return false;
                         };
                         for (int i = 0; i < 4; ++i) {
-                            if (is_equal(promotion_selection[i], current_square)) {
-                                game.get_board()[square.x][square.y].piece = static_cast<FPC::Piece>(i);
-                                promotion_dialog_active = false;
-                                game.advance_turn();
+                            if (is_equal(interface_state.promotion_selection[i], current_square)) {
+                                interface_state.game->get_board()[interface_state.square.x][interface_state.square.y].piece = static_cast<FPC::Piece>(i);
+                                interface_state.promotion_dialog_active = false;
+                                interface_state.game->advance_turn();
                             }
                         }
-                    } else if (draw_positions) {
-                        if (game.move_piece_to(square, square_or_empty.value(), true)) {
-                            if (game.may_promote(square_or_empty.value(), game.get_current_player()))
-                                promotion_dialog_active = true;
+                    } else if (interface_state.draw_positions) {
+                        if (interface_state.game->move_piece_to(interface_state.square, square_or_empty.value(), true)) {
+                            if (interface_state.game->may_promote(square_or_empty.value(), interface_state.game->get_current_player()))
+                                interface_state.promotion_dialog_active = true;
                             else
-                                game.advance_turn();
+                                interface_state.game->advance_turn();
                         }
-                        draw_positions = false;
+                        interface_state.draw_positions = false;
                     } else
-                        draw_positions = true;
+                        interface_state.draw_positions = true;
+
                     if (update_square_value)
-                        square = square_or_empty.value();
+                        interface_state.square = square_or_empty.value();
                 }
 
                 break;
         }
         painter.draw_board();
-        if (promotion_dialog_active)
-            promotion_selection = painter.draw_promotion_dialog(square, game.get_current_player());
-        if (draw_positions) {
-            if (!painter.draw_valid_positions(square, game.get_current_player()))
-                draw_positions = false;
+        if (interface_state.promotion_dialog_active)
+            interface_state.promotion_selection = painter.draw_promotion_dialog(interface_state.square, interface_state.game->get_current_player());
+        if (interface_state.draw_positions) {
+            if (!painter.draw_valid_positions(interface_state.square, interface_state.game->get_current_player()))
+                interface_state.draw_positions = false;
         }
         SDL_UpdateWindowSurface(window);
     }

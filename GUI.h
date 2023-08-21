@@ -53,7 +53,15 @@ private:
     std::unordered_map<std::string, SDL_Surface*> m_image_cache;
     int m_window_height;
     int m_window_width;
+};
 
+struct GUIState {
+    GUI::Painter* painter = nullptr;
+    FPC::GameState* game = nullptr;
+    std::array<SDL_Rect, 4> promotion_selection {};
+    FPC::Point square {};
+    bool draw_positions = false;
+    bool promotion_dialog_active = false;
 };
 
 }
